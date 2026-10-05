@@ -1,0 +1,1220 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VLearn AI Tutor – Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Montserrat:wght@700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* =====================================================================
+   TOKENS — VLearn navy + red, AI accent = xanh dương (không dùng gradient tím)
+   ===================================================================== */
+:root {
+  --bg: #f3f5f9; --surface: #ffffff; --surface-2: #f8fafc; --ink: #13203a; --ink-2: #334155; --muted: #64748b; --line: #e3e8ef;
+  --navy: #14335c; --navy-ink: #ffffff; --navy-soft: #e9eff8;
+  --red: #c8102e; --red-hover: #a50d26; --red-soft: #fdecef;
+  --ai: #2453c7; --ai-soft: #edf2fd; --ai-line: #c9d6f5;
+  --ok: #15803d; --ok-soft: #e7f6ec; --warn: #a15c07; --warn-soft: #fef4e2; --bad: #b91c1c; --bad-soft: #fdecec;
+  --hl: #fff1a8; --hl-soft: #fff9d6; --hl-line: #e0b400;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
+  --sh-sm: 0 1px 2px rgba(15,23,42,.06); --sh-md: 0 2px 6px rgba(15,23,42,.06), 0 10px 28px rgba(15,23,42,.08); --sh-lg: 0 18px 50px rgba(15,23,42,.22);
+  --ease: cubic-bezier(.2,.8,.2,1);
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+    --bg: #0e131b; --surface: #171e29; --surface-2: #1c2431; --ink: #e6ebf2; --ink-2: #c3ccd8; --muted: #93a0b2; --line: #2a3442;
+    --navy: #8fb0ea; --navy-ink: #0b1322; --navy-soft: #1d2a40;
+    --red: #e23b55; --red-hover: #c92c45; --red-soft: #3a1c23;
+    --ai: #8eaaf5; --ai-soft: #1b2640; --ai-line: #2f4270;
+    --ok: #5cc98a; --ok-soft: #16301f; --warn: #f0b45a; --warn-soft: #362a16; --bad: #f08a8a; --bad-soft: #3a1d1d;
+    --hl: #4a3f0e; --hl-soft: #2f2a12; --hl-line: #d9b425;
+    --sh-sm: 0 1px 2px rgba(0,0,0,.4); --sh-md: 0 6px 22px rgba(0,0,0,.35); --sh-lg: 0 18px 50px rgba(0,0,0,.6);
+}
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+.theme { width: 34px; height: 34px; padding: 0; justify-content: center; border-radius: 50%; color: var(--ink-2); }
+.theme svg.i { width: 17px; height: 17px; }
+.home-top { display: flex; justify-content: space-between; align-items: center; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 "Be Vietnam Pro", system-ui, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+svg.i { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; vertical-align: -3px; }
+button, a.btn { font: inherit; cursor: pointer; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 9px 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; transition: background .15s, border-color .15s, color .15s, transform .1s; }
+button:hover:not(:disabled), a.btn:hover { border-color: var(--navy); }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { cursor: default; opacity: .55; }
+button.primary { background: var(--navy); color: var(--navy-ink); border-color: var(--navy); font-weight: 600; }
+button.ghost { background: transparent; border-color: transparent; color: var(--ink-2); }
+button.ghost:hover { background: var(--surface-2); border-color: var(--line); }
+button.link { border: 0; background: none; color: var(--ai); padding: 4px 2px; text-decoration: underline; text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--ai); outline-offset: 2px; }
+code { font: 13px/1.5 "JetBrains Mono", Consolas, monospace; background: var(--navy-soft); border-radius: 5px; padding: 1px 5px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* ---------- Prototype bar (không thuộc VLearn) ---------- */
+.pbar { display: flex; align-items: center; gap: 10px; padding: 6px 16px; background: #0b1424; color: #b8c4d6; font-size: 12.5px; flex-wrap: wrap; }
+.pbar .tag { font: 800 10.5px/1 Montserrat, sans-serif; letter-spacing: 1px; background: #f5c542; color: #1a1300; padding: 4px 7px; border-radius: 4px; }
+.pbar b { color: #fff; }
+.pbar .sp { flex: 1; }
+.pbar button, .pbar a { background: transparent; color: #e2e8f0; border: 1px solid #334155; border-radius: 999px; padding: 3px 11px; font-size: 12px; text-decoration: none; display: inline-flex; gap: 6px; align-items: center; }
+.pbar button:hover, .pbar a:hover { border-color: #94a3b8; }
+.pbar svg.i { width: 13px; height: 13px; }
+
+/* ---------- VLearn chrome ---------- */
+.hdr { display: flex; align-items: center; gap: 14px; padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 20; }
+.hdr .back { color: var(--ink); display: inline-flex; }
+.hdr .title { font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mode { font: 700 10.5px/1 Montserrat, sans-serif; letter-spacing: .8px; text-transform: uppercase; padding: 5px 8px; border-radius: 6px; background: var(--navy-soft); color: var(--navy); white-space: nowrap; }
+.mode.lab { background: var(--ok-soft); color: var(--ok); }
+.prog { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.prog .bar { width: 120px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.prog .bar i { display: block; height: 100%; background: var(--navy); border-radius: 3px; }
+.avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--navy); color: var(--navy-ink); display: grid; place-items: center; font-weight: 700; font-size: 14px; flex: none; }
+.shell { display: grid; grid-template-columns: 264px minmax(0, 1fr); min-height: calc(100vh - 92px); }
+.shell.with-panel { grid-template-columns: 264px minmax(0, 1fr) 400px; }
+.side { background: var(--surface); border-right: 1px solid var(--line); padding: 14px 0 30px; }
+.side h6 { margin: 0 18px 12px; font: 800 12px/1.4 Montserrat, sans-serif; letter-spacing: .7px; text-transform: uppercase; }
+.side .grp { display: flex; justify-content: space-between; align-items: center; padding: 11px 18px; font-weight: 600; border-bottom: 1px solid var(--line); color: var(--ink-2); }
+.side .mod { padding: 12px 18px 6px; font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.side .lab-h { margin-top: 6px; padding: 10px 18px; font-weight: 700; font-size: 13.5px; color: var(--navy); border-left: 3px solid var(--navy); background: var(--navy-soft); display: flex; gap: 8px; align-items: center; }
+.side .it { display: flex; gap: 10px; align-items: center; padding: 8px 18px; font-size: 13.5px; color: var(--ink-2); }
+.side .it .meta { margin-left: auto; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.side .it.cur { background: var(--navy-soft); box-shadow: inset 3px 0 0 var(--red); font-weight: 600; color: var(--ink); }
+.side .it.cur .meta { color: var(--red); font-weight: 700; }
+.side .num { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--muted); display: inline-grid; place-items: center; font-size: 11px; flex: none; }
+.side .num svg.i { width: 12px; height: 12px; stroke-width: 3; }
+.side .it.cur .num { background: var(--navy); color: var(--navy-ink); border-color: var(--navy); }
+.side .it.okd .num { border-color: var(--ok); color: var(--ok); }
+.side .it .ic { color: var(--muted); display: inline-flex; }
+.side .it.cur .ic { color: var(--red); }
+.side .it .meta svg.i { color: var(--ok); width: 15px; height: 15px; }
+
+/* ---------- Stage ---------- */
+.stage { padding: 20px 28px 48px; max-width: 920px; width: 100%; margin: 0 auto; }
+.scenario { display: flex; gap: 12px; background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 25%, transparent); border-radius: var(--r-md); padding: 12px 16px; font-size: 14px; color: var(--ink-2); margin-bottom: 16px; }
+.scenario .ic { color: var(--warn); padding-top: 2px; }
+.scenario b { color: var(--ink); }
+.meta-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); margin: 0 4px 8px; gap: 8px; }
+.meta-row .n { border: 1px solid var(--line); border-radius: 6px; padding: 1px 10px; background: var(--surface); color: var(--ink); font-weight: 600; }
+.page { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 32px 40px 28px; box-shadow: var(--sh-sm); position: relative; }
+.page h2 { font: 800 30px/1.2 Montserrat, sans-serif; margin: 0 0 12px; letter-spacing: -.3px; }
+.page.lab h2 { font-size: 24px; }
+.page .lead { color: var(--muted); font-size: 17px; margin: 0; }
+.formula { font: 600 22px/1.4 "Cambria Math", Georgia, serif; text-align: center; padding: 16px; background: var(--navy-soft); border-radius: var(--r-md); }
+.callout { border: 1px solid var(--ai-line); background: var(--ai-soft); border-radius: var(--r-md); padding: 12px 16px; font-size: 14.5px; }
+pre { background: #0f1b2d; color: #dfe7f3; border-radius: var(--r-md); padding: 14px 16px; overflow-x: auto; margin: 0; }
+pre code { background: none; color: inherit; padding: 0; font-size: 13px; }
+/* Khối nội dung chọn được */
+.blk { position: relative; border-radius: 10px; padding: 7px 12px; margin: 4px -12px; transition: background .18s var(--ease), box-shadow .18s var(--ease); }
+.blk.li { padding-left: 32px; }
+.blk.li::before { content: ""; position: absolute; left: 15px; top: 17px; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-2); }
+.blk.num { padding-left: 40px; }
+.blk.num::before { content: attr(data-n); position: absolute; left: 12px; top: 8px; width: 20px; height: 20px; border-radius: 50%; background: var(--navy-soft); color: var(--navy); font-size: 11.5px; font-weight: 700; display: grid; place-items: center; }
+.picking .blk.can { cursor: pointer; background: var(--hl-soft); outline: 2px dashed var(--hl-line); outline-offset: -2px; margin-top: 14px; }
+.picking .blk.can.blink { animation: hlblink .9s ease-in-out 3; }
+@keyframes hlblink { 50% { background: var(--hl); outline-color: transparent; box-shadow: 0 0 0 4px color-mix(in srgb, var(--hl-line) 35%, transparent); } }
+.picking .blk.can:hover { background: var(--hl); }
+.picking .blk.can:not(.sel)::after { content: "+ Chạm để chọn"; position: absolute; right: 10px; top: -11px; font-size: 11.5px; font-weight: 700; color: #1a1300; background: var(--hl-line); border-radius: 999px; padding: 2px 9px; box-shadow: var(--sh-sm); pointer-events: none; }
+.blk.sel { background: var(--hl) !important; box-shadow: inset 0 0 0 2px var(--hl-line) !important; }
+.blk .tick { position: absolute; right: 8px; top: 8px; width: 22px; height: 22px; border-radius: 50%; background: var(--hl-line); color: #1a1300; display: grid; place-items: center; }
+.blk .tick svg.i { width: 13px; height: 13px; stroke-width: 3; }
+.blk.target { background: var(--red-soft); box-shadow: inset 0 0 0 2px var(--red); animation: glow 1.6s var(--ease) 2; }
+@keyframes glow { 50% { box-shadow: inset 0 0 0 2px var(--red), 0 0 0 6px color-mix(in srgb, var(--red) 18%, transparent); } }
+.blk .pin { position: absolute; right: 10px; top: -11px; font-size: 11.5px; font-weight: 700; background: var(--red); color: #fff; border-radius: 999px; padding: 3px 9px; display: inline-flex; gap: 5px; align-items: center; box-shadow: var(--sh-sm); z-index: 2; }
+.blk .pin svg.i { width: 13px; height: 13px; }
+
+/* ---------- Sticky help bar ---------- */
+.helpbar { position: sticky; bottom: 0; z-index: 6; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 16px 0 12px; background: linear-gradient(to bottom, transparent, var(--bg) 38%); }
+button.stuck { background: var(--red); color: #fff; border-color: var(--red); font-weight: 700; font-size: 15px; padding: 12px 22px; border-radius: 999px; box-shadow: 0 6px 18px color-mix(in srgb, var(--red) 35%, transparent); }
+button.stuck:hover:not(:disabled) { background: var(--red-hover); border-color: var(--red-hover); }
+button.stuck.pulse { animation: pulse 1.8s ease-out 3; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 55%, transparent); } 70% { box-shadow: 0 0 0 16px transparent; } 100% { box-shadow: 0 6px 18px color-mix(in srgb, var(--red) 35%, transparent); } }
+.pill { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 7px 14px; font-size: 13.5px; background: var(--surface); border: 1px solid var(--line); color: var(--ink-2); }
+.pill.live { border-color: var(--ai-line); background: var(--ai-soft); color: var(--ai); font-weight: 600; }
+.pill.new { border-color: var(--ok); background: var(--ok-soft); color: var(--ok); font-weight: 700; }
+.pill .typing { padding: 0; }
+
+/* ---------- Pick bar (Option A) ---------- */
+.pickbar { position: sticky; bottom: 12px; z-index: 7; margin-top: 16px; background: #13203a; color: #f1f5f9; border-radius: var(--r-lg); padding: 14px 16px; box-shadow: var(--sh-lg); animation: rise .25s var(--ease); }
+:root[data-theme="dark"] .pickbar { background: #24324a; }
+@keyframes rise { from { transform: translateY(14px); } to { transform: none; } }
+.pickbar .top { display: flex; align-items: center; gap: 10px; }
+.pickbar .hint { font-weight: 700; font-size: 18px; display: flex; gap: 8px; align-items: center; color: #ffe27a; }
+.pickbar .hint svg.i { width: 22px; height: 22px; animation: nudgeup 1s ease-in-out 4; }
+@keyframes nudgeup { 50% { transform: translateY(-4px); } }
+.pickbar .sub { font-size: 12.5px; color: #a8b6ca; margin: 2px 0 10px 26px; }
+.pickbar .count { margin-left: auto; font-size: 12.5px; background: #ffffff1f; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.pickbar button.x { background: transparent; border-color: #ffffff33; color: #e2e8f0; padding: 4px 10px; font-size: 13px; }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg button { background: #ffffff14; border-color: #ffffff24; color: #e2e8f0; border-radius: 999px; padding: 6px 13px; font-size: 13.5px; }
+.seg button.on { background: #fff; color: #13203a; border-color: #fff; font-weight: 600; }
+.pickbar .q { margin-top: 10px; background: #ffffff10; border: 1px dashed #ffffff30; border-radius: var(--r-sm); padding: 9px 12px; font-size: 14px; color: #e2e8f0; display: flex; gap: 10px; align-items: flex-start; }
+.pickbar .q p { margin: 0; flex: 1; }
+.pickbar .q.empty p { color: #94a3b8; font-style: italic; }
+.pickbar textarea { width: 100%; min-height: 64px; font: inherit; font-size: 14px; color: #f8fafc; background: #ffffff10; border: 1px solid #ffffff40; border-radius: var(--r-sm); padding: 9px 12px; margin-top: 10px; }
+.pickbar .acts { display: flex; gap: 10px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
+.pickbar .acts .grow { flex: 1; }
+.pickbar button.link { color: #9fb8ff; }
+.pickbar button.primary { background: #fff; color: #13203a; border-color: #fff; }
+.pickbar .err { color: #fca5a5; font-size: 13px; margin: 8px 0 0; }
+
+/* ---------- Inline AI card (A trả lời, C gợi ý) ---------- */
+.icard { position: relative; margin: 12px 0 16px; background: var(--surface); border: 1px solid var(--ai-line); border-radius: var(--r-lg); padding: 14px 18px 16px; box-shadow: var(--sh-md); animation: rise .28s var(--ease); }
+.icard::before { content: ""; position: absolute; top: -8px; left: 28px; width: 14px; height: 14px; background: var(--surface); border-left: 1px solid var(--ai-line); border-top: 1px solid var(--ai-line); transform: rotate(45deg); }
+.icard.nudge { border-color: color-mix(in srgb, var(--red) 45%, var(--ai-line)); }
+.icard.nudge::before { border-color: color-mix(in srgb, var(--red) 45%, var(--ai-line)); }
+.ih { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.ai-av { width: 30px; height: 30px; border-radius: 50%; background: var(--ai-soft); color: var(--ai); display: grid; place-items: center; flex: none; }
+.ai-av svg.i { width: 17px; height: 17px; }
+.ih .nm { font-weight: 700; font-size: 14px; }
+.badge { font: 700 10.5px/1 Montserrat, sans-serif; letter-spacing: .6px; text-transform: uppercase; border-radius: 5px; padding: 4px 7px; background: var(--ai-soft); color: var(--ai); }
+.badge.red { background: var(--red); color: #fff; }
+.ih .x { margin-left: auto; padding: 5px; border-color: transparent; background: transparent; color: var(--muted); }
+.ih .x:hover { background: var(--surface-2); }
+.qecho { display: flex; gap: 8px; color: var(--muted); font-size: 13.5px; font-style: italic; background: var(--surface-2); border-radius: var(--r-sm); padding: 8px 10px; margin-bottom: 8px; }
+.content h3 { margin: 10px 0 6px; font-size: 16.5px; }
+.content ul { margin: 4px 0; padding-left: 20px; font-size: 14.5px; }
+.content li { margin: 3px 0; }
+.ex { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 14px; margin-top: 10px; }
+.ex b { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.bridge { margin: 10px 0 0; font-size: 14px; border-left: 3px solid var(--ai); padding: 2px 0 2px 10px; color: var(--ink-2); }
+.source { font-size: 12.5px; color: var(--muted); margin: 12px 0 0; display: flex; gap: 6px; align-items: center; }
+.source svg.i { width: 14px; height: 14px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
+.signals { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+.sig { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; color: var(--ink-2); }
+.sig svg.i { width: 14px; height: 14px; color: var(--muted); }
+details.why { margin-top: 6px; font-size: 13.5px; color: var(--ink-2); }
+details.why summary { cursor: pointer; color: var(--ai); font-weight: 600; list-style: none; display: inline-flex; gap: 6px; align-items: center; padding: 5px 12px; border: 1px solid var(--ai-line); background: var(--ai-soft); border-radius: 999px; font-size: 13px; }
+details.why summary:hover { border-color: var(--ai); }
+details.why summary::after { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); margin-left: 2px; transition: transform .15s; }
+details.why[open] summary::after { transform: rotate(-135deg) translateY(-2px); }
+.evi-mini { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.evi-mini span.c { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 4px; background: var(--surface-2); }
+.evi-mini .m { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; }
+.evi-mini .m.ok { background: var(--ok-soft); color: var(--ok); } .evi-mini .m.no { background: var(--bad-soft); color: var(--bad); } .evi-mini .m.un { background: var(--warn-soft); color: var(--warn); } .evi-mini .m.sk { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+details.why summary::-webkit-details-marker { display: none; }
+details.why summary svg.i { width: 15px; height: 15px; }
+details.why ul { margin: 6px 0; padding-left: 18px; }
+.meter { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+.meter .bars { display: inline-flex; gap: 3px; }
+.meter .bars i { width: 16px; height: 6px; border-radius: 3px; background: var(--line); }
+.meter.cao .bars i.on { background: var(--ok); } .meter.cao { color: var(--ok); }
+.meter.tb .bars i.on { background: var(--warn); } .meter.tb { color: var(--warn); }
+.meter.thap .bars i.on { background: var(--bad); } .meter.thap { color: var(--bad); }
+.datanote { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; color: var(--muted); border-top: 1px solid var(--line); margin-top: 14px; padding-top: 10px; }
+.datanote svg.i { width: 14px; height: 14px; margin-top: 2px; }
+.alts { display: grid; gap: 8px; margin-top: 10px; }
+.alts button { justify-content: space-between; text-align: left; }
+.alts .p { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.typing { display: inline-flex; gap: 4px; padding: 6px 0; }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--ai); opacity: .35; animation: blink 1.2s infinite; }
+.typing i:nth-child(2) { animation-delay: .2s; } .typing i:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 40% { opacity: 1; transform: translateY(-2px); } }
+
+/* ---------- Side panel (B chat, D thread) ---------- */
+.panel { background: var(--surface); border-left: 1px solid var(--line); display: flex; flex-direction: column; position: sticky; top: 55px; height: calc(100vh - 55px); animation: slidein .28s var(--ease); }
+@keyframes slidein { from { transform: translateX(24px); } to { transform: none; } }
+.panel-h { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.panel-h .t { font-weight: 700; }
+.panel-h .s { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel-h .x { margin-left: auto; padding: 5px; border-color: transparent; background: transparent; color: var(--muted); }
+.dots { display: flex; gap: 5px; padding: 10px 16px 0; }
+.dots i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+.dots i.on { background: var(--ai); }
+.panel-b { flex: 1; overflow: auto; padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+.panel-f { font-size: 11.5px; color: var(--muted); text-align: center; padding: 9px 16px; border-top: 1px solid var(--line); display: flex; gap: 6px; justify-content: center; align-items: center; }
+.panel-f svg.i { width: 13px; height: 13px; }
+.msg { display: flex; gap: 8px; align-items: flex-end; max-width: 94%; animation: rise .22s var(--ease); }
+.msg .bub { border-radius: 14px; padding: 9px 13px; font-size: 14.5px; }
+.msg.ai .bub { background: var(--surface-2); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.msg.me { align-self: flex-end; }
+.msg.me .bub { background: var(--navy); color: var(--navy-ink); border-bottom-right-radius: 4px; }
+.msg.hu .bub { background: var(--ok-soft); border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent); border-bottom-left-radius: 4px; }
+.msg .who { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+.hu-av { width: 30px; height: 30px; border-radius: 50%; background: var(--ok); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 13px; flex: none; position: relative; }
+.hu-av.on::after { content: ""; position: absolute; right: -1px; bottom: -1px; width: 9px; height: 9px; border-radius: 50%; background: #22c55e; border: 2px solid var(--surface); }
+.opts-b { display: grid; gap: 8px; margin-left: 38px; }
+.opts-b button { justify-content: flex-start; text-align: left; padding: 10px 14px; border-radius: var(--r-md); }
+.opts-b button:hover { background: var(--ai-soft); border-color: var(--ai); }
+.opts-b .sub { display: flex; gap: 8px; }
+.opts-b .sub button { flex: 1; justify-content: center; font-size: 13.5px; color: var(--ink-2); }
+.dcard { background: var(--surface); border: 1px solid var(--ai-line); border-radius: var(--r-lg); padding: 14px 16px; box-shadow: var(--sh-sm); animation: rise .25s var(--ease); }
+.dcard h3 { margin: 4px 0 6px; font-size: 16px; }
+.eyebrow { color: var(--muted); font: 700 11.5px/1.4 Montserrat, sans-serif; text-transform: uppercase; letter-spacing: .7px; }
+.evi { list-style: none; padding: 0 !important; }
+.evi li { display: flex; gap: 8px; align-items: center; padding: 3px 0; }
+.evi .m { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; flex: none; }
+.evi .m.ok { background: var(--ok-soft); color: var(--ok); } .evi .m.no { background: var(--bad-soft); color: var(--bad); } .evi .m.un { background: var(--warn-soft); color: var(--warn); } .evi .m.sk { background: var(--surface-2); color: var(--muted); }
+.pickl { display: grid; gap: 6px; margin-top: 10px; }
+.pickl button { justify-content: flex-start; text-align: left; font-size: 14px; }
+/* D tracker */
+.track { display: flex; padding: 12px 16px 4px; }
+.track .st { flex: 1; text-align: center; font-size: 11.5px; color: var(--muted); position: relative; }
+.track .st::before { content: ""; position: absolute; top: 9px; left: -50%; width: 100%; height: 2px; background: var(--line); z-index: 0; }
+.track .st:first-child::before { display: none; }
+.track .st .d { width: 20px; height: 20px; border-radius: 50%; background: var(--surface); border: 2px solid var(--line); margin: 0 auto 4px; position: relative; z-index: 1; display: grid; place-items: center; }
+.track .st.done .d { background: var(--ok); border-color: var(--ok); color: #fff; }
+.track .st.done::before, .track .st.cur::before { background: var(--ok); }
+.track .st.cur .d { border-color: var(--ai); box-shadow: 0 0 0 4px var(--ai-soft); }
+.track .st.done, .track .st.cur { color: var(--ink); font-weight: 600; }
+.track svg.i { width: 12px; height: 12px; stroke-width: 3; }
+.req { font-size: 13.5px; }
+.req div { display: flex; gap: 6px; align-items: flex-start; }
+.req svg.i { width: 14px; height: 14px; margin-top: 4px; }
+
+/* ---------- Modal (Option D) ---------- */
+.overlay { position: fixed; inset: 0; background: rgba(11,20,36,.45); z-index: 40; display: grid; place-items: center; padding: 16px; }
+@keyframes fade { from { background: transparent; } }
+.modal { width: 100%; max-width: 560px; max-height: calc(100vh - 32px); overflow: auto; background: var(--surface); border-radius: 20px; box-shadow: var(--sh-lg); padding: 20px 22px; animation: rise .28s var(--ease); cursor: default; }
+.modal .mh { display: flex; align-items: center; gap: 12px; }
+.modal .mh h3 { margin: 0; font-size: 18px; }
+.modal .mh .x { margin-left: auto; padding: 6px; border-color: transparent; background: transparent; color: var(--muted); }
+.modal h4 { margin: 18px 0 8px; font-size: 12.5px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); }
+.expect { display: flex; gap: 8px; background: var(--ai-soft); color: var(--ink-2); border-radius: var(--r-md); padding: 10px 12px; font-size: 13.5px; margin-top: 12px; }
+.expect svg.i { color: var(--ai); margin-top: 2px; }
+.recips { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.recip { flex-direction: column; align-items: flex-start !important; text-align: left; padding: 12px 14px !important; border-radius: var(--r-md) !important; gap: 8px !important; }
+.recip.on { border: 2px solid var(--navy) !important; background: var(--navy-soft) !important; padding: 11px 13px !important; }
+.recip .avs { display: flex; }
+.recip .avs .hu-av { margin-right: -6px; border: 2px solid var(--surface); }
+.recip .n { font-weight: 700; font-size: 14px; }
+.recip .m { font-size: 12.5px; color: var(--muted); display: flex; gap: 5px; align-items: center; }
+.recip .m svg.i { width: 13px; height: 13px; }
+.ctxs { display: grid; gap: 8px; }
+.ctx { justify-content: flex-start; text-align: left; font-size: 13.5px; border-radius: var(--r-md); padding: 10px 12px; }
+.ctx .box { width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--navy); display: grid; place-items: center; flex: none; }
+.ctx.on .box { background: var(--navy); color: var(--navy-ink); }
+.ctx.off { color: var(--muted); text-decoration: line-through; }
+.ctx.off .box { border-color: var(--muted); }
+.ctx .box svg.i { width: 12px; height: 12px; stroke-width: 3; }
+.ctx > svg.i { width: 15px; height: 15px; color: var(--muted); }
+.modal textarea { width: 100%; min-height: 70px; font: inherit; font-size: 14px; padding: 10px 12px; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); }
+.mf { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+/* ---------- Câu hỏi nhanh / checkpoint ---------- */
+.check { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px 24px; box-shadow: var(--sh-sm); margin-top: 6px; }
+.check h3 { font-size: 16.5px; margin: 6px 0 12px; }
+.choices { display: grid; gap: 8px; }
+.choices button { justify-content: flex-start; text-align: left; border-radius: var(--r-md); padding: 11px 14px; }
+.choices button .rd { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--muted); flex: none; }
+.choices button.sel { border-color: var(--navy); background: var(--navy-soft); opacity: 1; }
+.choices button.sel .rd { border: 5px solid var(--navy); }
+.result { display: flex; gap: 10px; align-items: flex-start; border-radius: var(--r-md); padding: 11px 14px; margin-top: 12px; font-size: 14.5px; }
+.result.ok { background: var(--ok-soft); } .result.ok svg.i { color: var(--ok); }
+.result.bad { background: var(--bad-soft); } .result.bad svg.i { color: var(--bad); }
+
+/* ---------- Home & log ---------- */
+.home { max-width: 880px; margin: 0 auto; padding: 32px 18px 48px; }
+.logo { font: 800 24px/1 Montserrat, sans-serif; color: var(--navy); display: flex; gap: 8px; align-items: center; }
+.logo .v { width: 32px; height: 32px; border-radius: 8px; background: var(--navy); color: var(--navy-ink); display: grid; place-items: center; font-size: 17px; }
+.logo b { color: var(--red); }
+.home h1 { font: 800 32px/1.15 Montserrat, sans-serif; margin: 22px 0 8px; letter-spacing: -.4px; }
+.home .lede { color: var(--ink-2); font-size: 16px; max-width: 640px; }
+.step { margin-top: 28px; }
+.step .lbl { display: flex; align-items: center; gap: 10px; font-weight: 700; margin-bottom: 12px; flex-wrap: wrap; }
+.step .lbl i { width: 24px; height: 24px; border-radius: 50%; background: var(--navy); color: var(--navy-ink); display: grid; place-items: center; font-style: normal; font-size: 12.5px; }
+.fx { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.fx button { flex-direction: column; align-items: flex-start; text-align: left; padding: 16px; border-radius: var(--r-lg); gap: 8px; }
+.fx button.on { border: 2px solid var(--navy); background: var(--navy-soft); padding: 15px; }
+.fx .t { font-weight: 700; font-size: 15px; }
+.fx .d { font-size: 13px; color: var(--muted); }
+.opts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.opts a { display: flex; flex-direction: column; gap: 14px; padding: 20px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--line); color: var(--ink); text-decoration: none; box-shadow: var(--sh-sm); transition: transform .15s var(--ease), box-shadow .15s, border-color .15s; }
+.opts a:hover { transform: translateY(-2px); box-shadow: var(--sh-md); border-color: var(--navy); }
+.opts .L { width: 48px; height: 48px; border-radius: 14px; background: var(--navy); color: var(--navy-ink); display: grid; place-items: center; font: 800 22px/1 Montserrat, sans-serif; }
+.opts .go { font-size: 13.5px; color: var(--ai); font-weight: 600; display: flex; gap: 6px; align-items: center; }
+.note { font-size: 13px; color: var(--muted); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { border-bottom: 1px solid var(--line); padding: 7px; text-align: left; vertical-align: top; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px 20px; box-shadow: var(--sh-sm); margin: 14px 0; }
+.done { text-align: center; padding: 40px 24px; }
+.done .big { width: 64px; height: 64px; border-radius: 50%; background: var(--ok-soft); color: var(--ok); display: grid; place-items: center; margin: 0 auto 14px; }
+.done .big svg.i { width: 32px; height: 32px; }
+.viz { width: 100%; max-width: 380px; display: block; margin: 10px auto; }
+.viz text { fill: var(--muted); font-size: 11px; font-family: inherit; }
+.viz .axis { stroke: var(--muted); } .viz .curve { stroke: var(--ink); stroke-width: 2; fill: none; }
+.viz .up { stroke: var(--bad); stroke-width: 2.5; } .viz .down { stroke: var(--ok); stroke-width: 2.5; fill: none; } .viz .dot { fill: var(--ai); }
+.viz .t-bad { fill: var(--bad); font-weight: 600; } .viz .t-ok { fill: var(--ok); font-weight: 600; }
+.viz .win { fill: none; stroke: var(--ink); stroke-width: 1.5; } .viz .inp { fill: var(--ai); opacity: .35; } .viz .out-ok { fill: var(--ok); } .viz .out-bad { fill: var(--bad); }
+.viz .box { fill: var(--surface); stroke: var(--ink); stroke-width: 1.3; } .viz .box.hot { stroke: var(--bad); stroke-width: 2.2; }
+.viz .arr { stroke: var(--muted); stroke-width: 1.6; fill: none; } .viz text.b { fill: var(--ink); font-weight: 600; font-size: 12px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1180px) {
+  .shell, .shell.with-panel { grid-template-columns: minmax(0, 1fr); }
+  .shell.with-panel { grid-template-columns: minmax(0, 1fr) 380px; }
+  .side { display: none; }
+}
+@media (max-width: 860px) {
+  .shell.with-panel { grid-template-columns: minmax(0, 1fr); }
+  .panel { position: fixed; left: 0; right: 0; bottom: 0; top: auto; height: 80vh; border-left: 0; border-radius: 18px 18px 0 0; box-shadow: var(--sh-lg); z-index: 30; animation: rise .28s var(--ease); }
+  .stage { padding: 14px 16px 40px; }
+  .page { padding: 22px 18px; }
+  .page h2 { font-size: 24px; }
+  .formula { font-size: 17px; }
+  .prog .bar, .hdr .mode { display: none; }
+  .opts { grid-template-columns: 1fr 1fr; }
+  .fx { grid-template-columns: 1fr; }
+  .recips { grid-template-columns: 1fr; }
+  .overlay { place-items: end center; padding: 0; }
+  .modal { border-radius: 20px 20px 0 0; max-height: 88vh; }
+  .pickbar { padding: 12px; bottom: 8px; }
+  .pickbar .sub { display: none; }
+  .pickbar .top { flex-wrap: wrap; }
+  .pickbar .hint { font-size: 16px; order: 3; flex-basis: 100%; margin-top: 4px; }
+  .pickbar .top { margin-bottom: 8px; }
+  .pickbar .q p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .seg button { padding: 5px 11px; font-size: 13px; }
+}
+/* ---------- v5: tab Lý thuyết / Lab + trích dẫn slide ---------- */
+.tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 14px; box-shadow: var(--sh-sm); }
+.tabs button { border: 0; background: transparent; padding: 8px 14px; border-radius: 9px; font-weight: 600; color: var(--ink-2); }
+.tabs button:hover:not(.on) { background: var(--surface-2); }
+.tabs button.on { background: var(--navy); color: var(--navy-ink); }
+.tabs button span { font-weight: 400; font-size: 12.5px; opacity: .8; }
+.tabs .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--red); display: inline-block; }
+button.cite { margin-top: 10px; font-size: 13px; padding: 6px 12px; border-radius: 999px; background: var(--ai-soft); border-color: var(--ai-line); color: var(--ai); font-weight: 600; text-align: left; }
+button.cite:hover { border-color: var(--ai); }
+button.cite svg.i { width: 14px; height: 14px; }
+.blk.flash { background: var(--hl); box-shadow: inset 0 0 0 2px var(--hl-line); }
+.blk.flash .pin { background: var(--hl-line); color: #1a1300; }
+.topic-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.topic-cards button { flex-direction: column; align-items: flex-start; text-align: left; padding: 16px; border-radius: var(--r-lg); gap: 6px; }
+.topic-cards button.on { border: 2px solid var(--navy); background: var(--navy-soft); padding: 15px; }
+.topic-cards .t { font-weight: 700; font-size: 15px; }
+.topic-cards .d { font-size: 13px; color: var(--muted); }
+.modes { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.modes button { border: 0; background: transparent; padding: 8px 16px; border-radius: 9px; font-weight: 600; color: var(--ink-2); }
+.modes button.on { background: var(--navy); color: var(--navy-ink); }
+@media (max-width: 860px) { .topic-cards { grid-template-columns: 1fr; } .tabs { display: flex; } .tabs button { flex: 1; justify-content: center; white-space: nowrap; } .tabs button span { display: none; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* =====================================================================
+   ICONS (SVG, kiểu Lucide) — không dùng emoji làm icon chức năng
+   ===================================================================== */
+const P = {
+  spark: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>',
+  help: '<circle cx="12" cy="12" r="9"/><path d="M9.2 9a3 3 0 0 1 5.6 1c0 2-2.8 2.6-2.8 4"/><path d="M12 17.5h.01"/>',
+  x: '<path d="M18 6 6 18M6 6l12 12"/>', check: '<path d="M20 6 9 17l-5-5"/>',
+  send: '<path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4z"/>',
+  back: '<path d="M19 12H5M12 19l-7-7 7-7"/>', right: '<path d="M9 18l6-6-6-6"/>', down: '<path d="M6 9l6 6 6-6"/>',
+  reset: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>', lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  pencil: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>', msg: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  tap: '<path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11"/><path d="M12 10.5a1.5 1.5 0 0 1 3 0V12"/><path d="M15 11.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-2.7l-2.4-3.8a1.5 1.5 0 0 1 2.4-1.8L9 14"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c2 .6 3.5 2.3 3.5 5.2"/>',
+  slides: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>', flask: '<path d="M9 3h6M10 3v6L4.5 18.5A2 2 0 0 0 6.2 21.5h11.6a2 2 0 0 0 1.7-3L14 9V3"/><path d="M7 15h10"/>',
+  undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>', target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  alert: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+  up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  power: '<path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.8 0"/>', book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/>'
+};
+const I = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
+const AIAV = `<span class="ai-av">${I('spark')}</span>`;
+
+/* =====================================================================
+   CONTENT — 3 chủ đề, mỗi chủ đề có 2 trang: Lý thuyết (slide) và Lab (bước hướng dẫn).
+   Hai trang dùng chung topics (kiến thức nền), diag, keywords → chẩn đoán và trích dẫn khớp nhau.
+   blocks = các đoạn nội dung; đoạn có topic thì chọn/đánh dấu được (A, C) và là đích trích dẫn.
+   Mỗi phiên test: facilitator chọn chủ đề + tab bắt đầu; tester tự chuyển tab được.
+   ===================================================================== */
+const SLIDE = { mode: 'slide', modeLabel: 'Lý thuyết', unit: 'slide', progUnit: 'slide', qqName: 'câu hỏi nhanh', goal: 'hiểu slide này đủ để trả lời đúng câu hỏi nhanh bên dưới, rồi học tiếp.' };
+const LAB = { mode: 'lab', modeLabel: 'Lab', unit: 'bước', progUnit: 'hoạt động', qqName: 'checkpoint', goal: 'hiểu bước này đủ để trả lời đúng checkpoint bên dưới, rồi quay lại code.' };
+const FX = {
+  /* ------------------------------------------------------------------ CONTEXT WINDOW */
+  context: {
+    label: 'Context window', sub: 'Khái niệm LLM · slide 12 + Lab 4',
+    topics: {
+      token: { name: 'Token là gì',
+        base: ['Token là mẩu văn bản model đọc: có thể là một từ, một phần của từ hoặc dấu câu.', 'Model đếm giới hạn theo token, không theo từ hay ký tự.', 'Tiếng Việt có dấu thường tốn nhiều token hơn số từ.'],
+        example: ['"Xin chào các bạn" có 4 từ nhưng thường bị tách thành nhiều hơn 4 token.', 'Quy ước thô cho tiếng Anh: 1.000 token ≈ 750 từ.', '"128K" nghĩa là khoảng 128.000 token, không phải 128.000 từ.'],
+        explain: ['Token là "đơn vị đo" độ dài văn bản đối với model.', 'Mọi con số 8K, 128K đều tính bằng token.'],
+        bridge: 'Context window đo bằng token, nên muốn biết có vượt giới hạn không thì phải đếm token chứ không đếm chữ.' },
+      budget: { name: 'Input và output dùng chung context window',
+        base: ['Mỗi lần gọi, phần bạn gửi (input) và phần model viết ra (output) phải cùng nằm trong một giới hạn.', 'Input càng dài → chỗ còn lại cho câu trả lời càng ít.', 'Hết chỗ → câu trả lời bị cắt ngang, hoặc API báo lỗi vượt giới hạn.'],
+        example: ['Context window 8.000 token; prompt + tài liệu đã dài 7.500 token.', '→ Model chỉ còn khoảng 500 token để trả lời.', 'Yêu cầu một bản tóm tắt 1.000 token sẽ bị cắt giữa chừng.'],
+        explain: ['Hãy xem context window như một trang giấy: câu hỏi và câu trả lời phải cùng nằm trên trang đó.'],
+        bridge: 'Đó là ý nghĩa của "context window ≥ token input + token output".', viz: 'budget' },
+      memory: { name: 'Context window không phải bộ nhớ dài hạn',
+        base: ['Model không tự nhớ gì giữa các lần gọi. Mỗi lần gọi, ứng dụng gửi lại lịch sử chat vào context window.', 'Chat càng dài → lịch sử càng dài → khi vượt giới hạn, phần cũ nhất bị cắt bỏ.', 'Vì vậy model "quên" phần đầu cuộc trò chuyện.'],
+        example: ['Tin nhắn đầu bạn dặn AI: "Trả lời bằng tiếng Việt".', 'Sau rất nhiều lượt chat, lịch sử vượt giới hạn và tin nhắn đầu bị cắt.', 'AI bắt đầu trả lời tiếng Anh: không phải "ngốc", mà là không còn thấy lời dặn.'],
+        explain: ['"Quên" ở đây nghĩa là phần đó không còn được gửi vào context window nữa.'],
+        bridge: '"Phần cũ bị cắt bỏ" chính là lý do model quên phần đầu cuộc chat.' },
+      overview: { name: 'Giải thích lại theo cách khác',
+        base: ['Hình dung model như một người chỉ nhìn được một tấm bảng có kích thước cố định.', 'Mọi thứ bạn gửi (lời dặn, lịch sử chat, tài liệu) và câu trả lời của nó đều phải viết lên tấm bảng đó.', 'Bảng đầy → phải xoá phần cũ nhất để có chỗ viết tiếp.', 'Kích thước tấm bảng là context window, đo bằng token.'],
+        example: ['Bảng 8.000 token. Bạn viết lên 7.500 token tài liệu.', 'Model chỉ còn 500 token để viết câu trả lời.', 'Muốn trả lời dài hơn thì phải xoá bớt tài liệu, hoặc dùng model có context window lớn hơn.'],
+        bridge: 'context window ≥ input + output = "mọi thứ phải vừa trên một tấm bảng".' }
+    },
+    order: ['token', 'budget', 'memory'],
+    diag: [
+      { topic: 'token', label: 'token', q: 'Câu "Xin chào các bạn" có 4 từ. Với model, nó thường chiếm…', opts: ['Nhiều hơn 4 token', 'Đúng 4 token', '1 token'] },
+      { topic: 'budget', label: 'input + output', q: 'Context window 8.000 token, prompt của bạn đã dài 7.900 token. Model còn viết được câu trả lời dài khoảng…', opts: ['~100 token', '8.000 token', 'Không giới hạn'] },
+      { topic: 'memory', label: 'bộ nhớ', q: 'Chat rất dài, AI bắt đầu bỏ qua lời dặn ở tin nhắn đầu. Lý do hợp lý nhất là…', opts: ['Tin nhắn đầu đã bị cắt khỏi context window', 'Model mệt sau nhiều lượt chat', 'Model cố tình không nghe'] }
+    ],
+    keywords: [[/token|8k|128k|đếm/, 'token'], [/input|output|đầu vào|đầu ra|bị cắt ngang|giới hạn|reserve|exceeded|chừa/, 'budget'], [/quên|nhớ|cắt bỏ|lịch sử|memory|cũ nhất|system/, 'memory'], [/cả khái niệm|toàn bộ|cả slide|cả bước/, 'overview']],
+    theory: Object.assign({}, SLIDE, {
+      tabLabel: 'Slide 12', qqLabel: 'Câu hỏi nhanh · slide 12',
+      course: 'Bài 4 · Token và context window — Làm việc với LLM', done: 11, total: 24, slideNo: 12,
+      slideRef: 'Slide 12 · Context window', slideName: 'Context window',
+      side: [['Slide: Token là gì', '✓'], ['Slide: Context window', 'Đang học'], ['Slide: Chi phí theo token', ''], ['Slide: Rút gọn prompt', '']],
+      situation: 'Bạn học cả ngày, đây là buổi chiều. Còn vài slide nữa là hết bài. Bạn đã đọc slide này 2 lần nhưng vẫn không rõ context window là gì và vì sao chat dài thì model "quên".',
+      title: '<h2>Context window</h2>',
+      blocks: [
+        { topic: 'token', label: 'Lượng token tối đa… trong một lần gọi', html: '<p class="lead">Lượng token tối đa model xử lý trong <b>một lần gọi</b>.</p>' },
+        { topic: 'budget', label: 'context window ≥ token input + token output', html: '<div class="formula">context window ≥ token input + token output</div>' },
+        { topic: 'token', li: 1, label: '128K / 8K token', html: 'Nhiều model lớn hiện nay: 128K token trở lên; một số model nhỏ: 8K token' },
+        { topic: 'budget', li: 1, label: 'Input = system prompt + lịch sử chat + …', html: 'Input = system prompt + lịch sử chat + tài liệu + câu hỏi' },
+        { topic: 'memory', li: 1, label: 'Vượt giới hạn → phần cũ bị cắt bỏ', html: 'Vượt giới hạn → phần cũ bị cắt bỏ, hoặc câu trả lời bị cắt ngang' }
+      ],
+      check: { q: 'Model có context window 8.000 token. Prompt + tài liệu của bạn dài 7.500 token, và bạn yêu cầu một bản tóm tắt khoảng 1.000 token. Điều gì dễ xảy ra nhất?',
+        opts: ['Bản tóm tắt bị cắt giữa chừng', 'Không sao, 8.000 token chỉ tính cho input', 'Không sao, model nhớ phần thừa cho lần sau', 'Không chắc'], correct: 0,
+        explain: 'Input 7.500 + output 1.000 = 8.500 > 8.000 token, nên chỉ còn khoảng 500 token cho câu trả lời.' },
+      cSignals: [['clock', '4 phút ở slide này (thường ~1,5 phút)'], ['undo', 'Lật qua lại slide 11 ↔ 12 hai lần'], ['users', '6/10 học viên bí ở đây cần ôn phần input + output']],
+      cDefault: 'budget', cAlts: [{ t: 'budget', p: '~55%' }, { t: 'memory', p: '~30%' }, { t: 'token', p: '~15%' }, { t: 'overview', p: '' }],
+      d: { tried: 'Đã ở slide này khoảng 4 phút, lật lại 2 lần', placeholder: 'Ví dụ: không hiểu vì sao tài liệu dài lại làm câu trả lời bị cắt',
+        reply: { ta: ['Chào bạn! Thử hình dung context window là một trang giấy 8.000 token. Tài liệu bạn gửi đã chiếm 7.500, vậy còn bao nhiêu chỗ để model viết câu trả lời?', 'Bạn thử trả lời lại câu hỏi nhanh với ý đó nhé.'],
+                 team: ['Mình cũng bí chỗ này hôm qua 😅 Hiểu đơn giản: phần mình gửi (input) với phần model viết ra (output) dùng chung một giới hạn.', 'Tài liệu dài quá thì model còn ít chỗ để viết → bị cắt.'] },
+        more: { ta: 'Không sao! Để ý chỗ này: 7.500 + 1.000 = 8.500, lớn hơn 8.000. Phần dư không còn chỗ để viết nên bị cắt. Nếu vẫn chưa rõ, cuối giờ mình gọi bạn 5 phút nhé.',
+                team: 'Ví dụ nè: tài liệu 7.500, câu trả lời cần 1.000, tổng 8.500 > 8.000 → thiếu chỗ. Tối nay họp Lab mình giải thích thêm cho!' } }
+    }),
+    lab: Object.assign({}, LAB, {
+      tabLabel: 'Task 2', qqLabel: 'Checkpoint · Task 2',
+      course: 'Ngày 4 · DAY04 · Lab: Chatbot nhớ hội thoại', done: 7, total: 16, slideNo: 4,
+      slideRef: 'Task 2 — Cắt lịch sử chat · bước 4', slideName: 'Task 2',
+      module: 'Chatbot nhớ hội thoại',
+      side: [['Thông tin brief & bối cảnh', '✓'], ['Chuẩn bị môi trường & fork repo', '✓'], ['Task 1 — Đếm token bằng tiktoken', '✓'], ['Task 2 — Cắt lịch sử chat cho vừa context window', 'Đang học'], ['Task 3 — Tóm tắt hội thoại cũ', ''], ['Trạm cứu hộ sự cố & FAQs', ''], ['Nộp bài và đánh giá Lab', '']],
+      situation: 'Bạn đang làm Lab 4 buổi chiều. Chatbot chạy tốt lúc đầu, nhưng chat dài thì báo lỗi "context length exceeded". Bạn đã đọc hướng dẫn Task 2 hai lần.',
+      title: '<h2>✂️ TASK 2 — CẮT LỊCH SỬ CHAT CHO VỪA CONTEXT WINDOW</h2>',
+      blocks: [
+        { topic: 'overview', label: 'Mục tiêu: không lỗi khi chat dài, giữ system prompt', html: '<div class="callout"><b>Mục tiêu:</b> chatbot không bị lỗi <code>context length exceeded</code> khi hội thoại dài, và vẫn giữ system prompt.</div>' },
+        { topic: null, html: '<p style="margin:6px 0">Trong <code>chat.py</code>, hoàn thiện hàm <code>trim_history(messages, max_tokens=8000, reserve=1000)</code>:</p>' },
+        { topic: 'token', n: 1, label: 'Đếm token bằng count_tokens()', html: 'Đếm token của mỗi message bằng <code>count_tokens()</code> ở Task 1 (đếm token, không đếm chữ).' },
+        { topic: 'budget', n: 2, label: 'Ngân sách input = max_tokens − reserve', html: 'Chừa <code>reserve</code> token cho câu trả lời: ngân sách cho input = <code>max_tokens − reserve</code>.' },
+        { topic: 'memory', n: 3, label: 'Giữ system prompt, bỏ message cũ nhất', html: 'Luôn giữ system prompt; bỏ dần các message <b>cũ nhất</b> cho đến khi tổng token ≤ ngân sách.' },
+        { topic: 'memory', label: 'Đoạn code trim_history (dòng TODO)', html: `<pre><code>def trim_history(messages, max_tokens=8000, reserve=1000):
+    budget = max_tokens - reserve
+    system, history = messages[0], messages[1:]
+    # TODO: bỏ message cũ nhất trong history cho đến khi
+    #       count_tokens([system] + history) &lt;= budget
+    return [system] + history</code></pre>` }
+      ],
+      check: { q: 'Context window 8.000, reserve = 1.000. Lịch sử chat (kể cả system prompt) đang là 7.600 token. trim_history nên làm gì?',
+        opts: ['Bỏ message cũ nhất (giữ system prompt) cho đến khi ≤ 7.000 token', 'Không làm gì, vì 7.600 < 8.000', 'Xoá system prompt trước cho gọn', 'Không chắc'], correct: 0,
+        explain: 'Phải chừa 1.000 token cho câu trả lời, nên input tối đa 8.000 − 1.000 = 7.000 token. Bỏ dần message cũ nhất, giữ system prompt vì nó chứa lời dặn quan trọng.' },
+      cSignals: [['clock', '20 phút ở bước này (thường ~10 phút)'], ['alert', 'Chạy code lỗi "context length exceeded" 3 lần'], ['users', '6/10 học viên bí ở đây quên chừa chỗ cho câu trả lời']],
+      cDefault: 'budget', cAlts: [{ t: 'budget', p: '~55%' }, { t: 'memory', p: '~30%' }, { t: 'token', p: '~15%' }, { t: 'overview', p: '' }],
+      d: { tried: 'Đã ở bước này khoảng 20 phút, chạy lỗi 3 lần', placeholder: 'Ví dụ: đã cắt lịch sử rồi mà vẫn lỗi context length exceeded',
+        reply: { ta: ['Chào bạn! Lỗi này hay do mới cắt input cho vừa 8.000 mà quên chừa chỗ cho câu trả lời.', 'Bạn thử đặt ngân sách input = 8.000 − reserve rồi chạy lại nhé. Slide 12 bài Context window có công thức đó.'],
+                 team: ['Mình cũng bị y vậy 😅 Nhớ là output cũng ăn vào context window nha.', 'Cắt input xuống còn max_tokens − reserve là hết lỗi.'] },
+        more: { ta: 'Không sao! Ví dụ 8.000 − 1.000 = 7.000: cứ bỏ message cũ nhất (trừ system prompt) đến khi tổng ≤ 7.000. Nếu vẫn kẹt, gửi mình link repo nhé.',
+                team: 'Tối nay họp Lab mình share đoạn trim_history của mình cho bạn xem!' } }
+    })
+  },
+
+  /* ------------------------------------------------------------------ REACT AGENT */
+  react: {
+    label: 'ReAct agent', sub: 'Agent & tool calling · slide 9 + Lab 3',
+    topics: {
+      tool: { name: 'Native tool calling: ai chạy tool?',
+        base: ['Model không tự chạy hàm. Nó chỉ trả về <code>tool_calls</code>: tên tool + arguments (JSON).', 'Code của bạn đọc <code>tool_calls</code> rồi gọi hàm Python tương ứng.', 'Đây là bước Action trong Thought → Action → Observation.'],
+        example: ['Câu hỏi: "Thời tiết Hà Nội hôm nay?"', 'Model trả về tool_calls: <code>get_weather(city="Hà Nội")</code>.', 'Code của bạn gọi <code>get_weather("Hà Nội")</code> → nhận "31°C, nắng".'],
+        explain: ['"Native tool calling" nghĩa là model chọn tool và tham số, còn việc chạy thật là của code bạn.'],
+        bridge: 'Action = code của bạn chạy tool mà model đã chọn.' },
+      obs: { name: 'Observation: đưa kết quả tool trở lại model',
+        base: ['Chạy tool xong, kết quả phải được append vào <code>messages</code> với <code>role: "tool"</code> và đúng <code>tool_call_id</code>.', 'Trước đó cũng phải append chính message của model (message có <code>tool_calls</code>).', 'Rồi gọi model lần nữa: model đọc Observation và quyết định bước tiếp theo.'],
+        example: ['<code>messages.append(msg)</code>: message của model có tool_calls', '<code>messages.append({"role": "tool", "tool_call_id": call.id, "content": "31°C, nắng"})</code>', 'Gọi model lại → model trả lời: "Hà Nội hôm nay 31°C, trời nắng."'],
+        explain: ['Nếu không đưa kết quả trở lại, model không bao giờ "thấy" Observation, nên agent dừng ở Action.'],
+        bridge: 'Observation = kết quả tool quay lại model bằng message role "tool".', viz: 'loop' },
+      stop: { name: 'Khi nào vòng lặp dừng',
+        base: ['Dừng khi model trả lời mà không còn <code>tool_calls</code>: đó là câu trả lời cuối.', 'Hoặc dừng khi chạm <code>MAX_STEPS</code> để tránh lặp vô hạn (tốn token, treo chương trình).', 'Mỗi vòng lặp là một lượt Thought → Action → Observation.'],
+        example: ['Vòng 1: model gọi get_weather → Observation "31°C, nắng".', 'Vòng 2: model đã đủ thông tin, trả lời không kèm tool_calls → return.', 'Nếu model cứ gọi tool mãi, đến vòng 5 thì dừng và báo lỗi.'],
+        explain: ['<code>MAX_STEPS</code> chỉ là lưới an toàn; điều kiện dừng chính là "không còn tool_calls".'],
+        bridge: 'Hết tool_calls → trả lời cuối; MAX_STEPS chặn lặp vô hạn.' },
+      overview: { name: 'Giải thích lại cả vòng ReAct theo cách khác',
+        base: ['Hình dung model là người quản lý, còn code của bạn là trợ lý.', 'Quản lý suy nghĩ (Thought) rồi giao việc: "tra thời tiết Hà Nội" (Action = tool_calls).', 'Trợ lý đi làm, mang kết quả về báo lại (Observation = message role "tool").', 'Quản lý đọc kết quả, giao việc tiếp hoặc chốt câu trả lời. Chốt rồi thì dừng.'],
+        example: ['Hỏi: "Thời tiết Hà Nội?" → model: gọi get_weather.', 'Code chạy get_weather → gửi lại "31°C, nắng".', 'Model: "Hà Nội hôm nay 31°C, trời nắng." (không còn tool_calls → dừng).'],
+        bridge: 'Agent = lặp giao việc → làm → báo lại, cho đến khi quản lý chốt.' }
+    },
+    order: ['tool', 'obs', 'stop'],
+    diag: [
+      { topic: 'tool', label: 'ai chạy tool', q: 'Khi dùng native tool calling, ai thực sự chạy hàm get_weather?', opts: ['Code của bạn', 'Model tự chạy', 'API của nhà cung cấp model chạy giúp'] },
+      { topic: 'obs', label: 'Observation', q: 'Chạy tool xong, kết quả cần đi đâu?', opts: ['Append vào messages (role "tool") rồi gọi model lần nữa', 'In ra màn hình là xong', 'Ghi vào file trace rồi dừng'] },
+      { topic: 'stop', label: 'điều kiện dừng', q: 'Vòng ReAct nên dừng khi nào?', opts: ['Khi model trả lời không còn tool_calls (hoặc chạm MAX_STEPS)', 'Sau đúng 1 lần gọi tool', 'Khi người dùng tắt chương trình'] }
+    ],
+    keywords: [[/tool_calls|tool call|chạy tool|thực thi|action|ai chạy/, 'tool'], [/role|tool_call_id|observation|kết quả tool|append|messages|dừng luôn/, 'obs'], [/khi nào dừng|max_steps|vô hạn|vòng lặp|while/, 'stop'], [/cả vòng|toàn bộ|cả slide|cả bước/, 'overview']],
+    theory: Object.assign({}, SLIDE, {
+      tabLabel: 'Slide 9', qqLabel: 'Câu hỏi nhanh · slide 9',
+      course: 'Ngày 3 · DAY03 · Chatbot vs ReAct Agent', done: 8, total: 23, slideNo: 9,
+      slideRef: 'Slide 9 · Vòng lặp ReAct', slideName: 'Vòng lặp ReAct',
+      side: [['Slide: Chatbot vs Agent', '✓'], ['Slide: Vòng lặp ReAct', 'Đang học'], ['Slide: Thiết kế tool schema', ''], ['Slide: Trace & đánh giá agent', '']],
+      situation: 'Bạn học buổi sáng trước khi làm Lab 3. Đã đọc slide này 2 lần nhưng chưa rõ Thought / Action / Observation khác nhau thế nào và ai mới là người chạy tool.',
+      title: '<h2>Vòng lặp ReAct với Native Tool Calling</h2>',
+      blocks: [
+        { topic: 'overview', label: 'Thought → Action → Observation → … → Answer', html: '<div class="formula">Thought → Action → Observation → … → Answer</div>' },
+        { topic: 'tool', li: 1, label: 'Model trả về tool_calls, không tự chạy hàm', html: 'Model <b>không chạy hàm</b>: nó trả về <code>tool_calls</code> (tên tool + arguments JSON).' },
+        { topic: 'tool', li: 1, label: 'Ứng dụng chạy tool → Action', html: 'Ứng dụng của bạn chạy tool tương ứng → đó là <b>Action</b>.' },
+        { topic: 'obs', li: 1, label: 'Kết quả gửi lại bằng role "tool" → Observation', html: 'Kết quả tool gửi lại model bằng message <code>role: "tool"</code> → đó là <b>Observation</b>.' },
+        { topic: 'stop', li: 1, label: 'Hết tool_calls → trả lời; MAX_STEPS', html: 'Hết <code>tool_calls</code> → model trả lời cuối; <code>MAX_STEPS</code> chặn vòng lặp vô hạn.' }
+      ],
+      check: { q: 'Trong vòng ReAct, Observation là gì?',
+        opts: ['Kết quả tool được gửi lại cho model (message role "tool")', 'Suy nghĩ của model trước khi gọi tool', 'Câu trả lời cuối cùng cho người dùng', 'Không chắc'], correct: 0,
+        explain: 'Observation là kết quả tool mà ứng dụng gửi lại cho model, để model quyết định bước tiếp theo.' },
+      cSignals: [['clock', '5 phút ở slide này (thường ~2 phút)'], ['undo', 'Lật qua lại slide 8 ↔ 9 hai lần'], ['users', '6/10 học viên bí ở đây nhầm ai là người chạy tool']],
+      cDefault: 'tool', cAlts: [{ t: 'tool', p: '~50%' }, { t: 'obs', p: '~35%' }, { t: 'stop', p: '~15%' }, { t: 'overview', p: '' }],
+      d: { tried: 'Đã ở slide này khoảng 5 phút, lật lại 2 lần', placeholder: 'Ví dụ: không hiểu Observation khác Action chỗ nào',
+        reply: { ta: ['Chào bạn! Mẹo nhớ: Action là việc code của bạn làm (chạy tool), Observation là kết quả mang về đưa lại cho model.', 'Model chỉ "nghĩ" và "ra lệnh" thôi, không tự chạy hàm.'],
+                 team: ['Mình hiểu kiểu sếp – nhân viên: model là sếp ra lệnh (tool_calls), code là nhân viên đi làm rồi báo cáo lại (Observation).'] },
+        more: { ta: 'Không sao! Chiều nay làm Task 2.2 của Lab 3 bạn sẽ thấy rõ hơn. Nếu vẫn kẹt, cuối giờ mình gọi 5 phút giải thích nhé.',
+                team: 'Chiều làm Lab 3 mình ngồi cạnh làm cùng bạn nha!' } }
+    }),
+    lab: Object.assign({}, LAB, {
+      tabLabel: 'Task 2.2', qqLabel: 'Checkpoint · Task 2.2',
+      course: 'Ngày 3 · DAY03 · Lab: Chatbot vs ReAct Agent', done: 8, total: 19, slideNo: 6,
+      slideRef: 'Task 2.2 — Lập trình ReAct loop · bước 6', slideName: 'Task 2.2',
+      module: 'Chatbot vs ReAct Agent',
+      side: [['Thông tin brief & bối cảnh', '✓'], ['Chuẩn bị môi trường & fork repo', '✓'], ['Task 1.1 — Đánh giá 4 tiêu chí agent', '✓'], ['Task 1.2 — Khai báo tool schema', '✓'],
+        ['Task 2.1 — Lập trình hàm thực thi tool', '✓'], ['Task 2.2 — Lập trình ReAct loop', 'Đang học'], ['Task 3.1 — Chạy test suite & trích trace', ''], ['Task 3.2 — Đóng gói repo cá nhân', ''],
+        ['Trạm cứu hộ sự cố & FAQs', ''], ['Nộp bài và đánh giá Lab', '']],
+      situation: 'Bạn đang làm Lab 3 buổi chiều, đã xong Task 2.1. Ở Task 2.2 bạn đã đọc hướng dẫn 2 lần; agent của bạn gọi tool xong thì dừng luôn, không trả lời được câu hỏi.',
+      title: '<h2>⚙️ TASK 2.2 — LẬP TRÌNH REACT LOOP</h2>',
+      blocks: [
+        { topic: 'overview', label: 'Mục tiêu: lặp Thought → Action → Observation', html: '<div class="callout"><b>Mục tiêu:</b> Agent tự lặp <code>Thought → Action → Observation</code> cho đến khi trả lời được câu hỏi, dùng Native Tool Calling.</div>' },
+        { topic: null, html: '<p style="margin:6px 0">Trong <code>agent.py</code>, hoàn thiện hàm <code>run_agent(question)</code>:</p>' },
+        { topic: 'tool', n: 1, label: 'Gọi model với messages và tools', html: 'Gọi model với <code>messages</code> và <code>tools</code>.' },
+        { topic: 'obs', n: 2, label: 'Thực thi tool, append role "tool" + tool_call_id', html: 'Nếu response có <code>tool_calls</code>: thực thi từng tool bằng hàm ở Task 2.1, append kết quả với <code>role: "tool"</code> và <code>tool_call_id</code> tương ứng.' },
+        { topic: 'stop', n: 3, label: 'Lặp đến khi hết tool_calls / MAX_STEPS', html: 'Lặp lại đến khi model trả lời không còn <code>tool_calls</code>, hoặc chạm <code>MAX_STEPS = 5</code>.' },
+        { topic: null, n: 4, html: 'Ghi mỗi bước vào trace để xuất <code>docs/trace_waterfall.json</code>.' },
+        { topic: 'obs', label: 'Đoạn code vòng while (dòng TODO)', html: `<pre><code>while step &lt; MAX_STEPS:
+    resp = client.chat.completions.create(model=MODEL, messages=messages, tools=TOOLS)
+    msg = resp.choices[0].message
+    if not msg.tool_calls:
+        return msg.content
+    # TODO: thực thi tool_calls và append Observation vào messages
+    step += 1</code></pre>` }
+      ],
+      check: { q: 'Model vừa trả về tool_calls: get_weather(city="Hà Nội"). Theo Task 2.2, code của bạn cần làm gì tiếp theo?',
+        opts: ['Chạy get_weather, append kết quả (role "tool") vào messages rồi gọi model lại', 'Trả thẳng kết quả get_weather cho người dùng', 'Gọi model lại ngay, model sẽ tự chạy get_weather', 'Không chắc'], correct: 0,
+        explain: 'Model chỉ chọn tool. Code của bạn chạy tool (Action), đưa kết quả trở lại bằng message role "tool" (Observation), rồi gọi model lại để nó quyết định bước tiếp.' },
+      cSignals: [['clock', '25 phút ở bước này (thường ~12 phút)'], ['undo', 'Quay lại đọc Task 2.1 hai lần'], ['users', '6/10 học viên bí ở đây kẹt phần đưa kết quả tool trở lại model']],
+      cDefault: 'obs', cAlts: [{ t: 'obs', p: '~55%' }, { t: 'stop', p: '~25%' }, { t: 'tool', p: '~20%' }, { t: 'overview', p: '' }],
+      d: { tried: 'Đã ở bước này khoảng 25 phút, đọc lại hướng dẫn 2 lần', placeholder: 'Ví dụ: agent gọi tool xong thì dừng luôn, không trả lời',
+        reply: { ta: ['Chào bạn! Agent dừng sau khi gọi tool thường là do kết quả tool chưa được đưa trở lại model.', 'Bạn kiểm tra giúp mình: đã append message của model (có tool_calls) và message role "tool" với đúng tool_call_id chưa? Slide 9 có sơ đồ vòng lặp đó.'],
+                 team: ['Mình cũng dính y chang 😅 Nhớ append 2 thứ: message của model có tool_calls, rồi message role "tool" kèm tool_call_id.', 'Thiếu cái nào là model không thấy kết quả tool.'] },
+        more: { ta: 'Không sao! Bạn đẩy code lên repo rồi gửi link, mình xem đoạn vòng while nhé. Bước 9 (Trạm cứu hộ) cũng có ví dụ đầy đủ.',
+                team: 'Tối nay mình share màn hình so code với bạn nhé, hoặc xem FAQ ở bước 9, có ví dụ đầy đủ đó!' } }
+    })
+  },
+
+  /* ------------------------------------------------------------------ GRADIENT DESCENT */
+  gd: {
+    label: 'Gradient Descent', sub: 'Có công thức · slide 7 + Lab Train MLP',
+    topics: {
+      loss: { name: 'Hàm loss L(w) là gì',
+        base: ['L(w) là một con số đo mô hình đang sai bao nhiêu trên dữ liệu.', 'L càng nhỏ → dự đoán càng sát đáp án.', 'Training = chỉnh w từng chút để L nhỏ dần.'],
+        example: ['Mô hình dự đoán 7, đáp án đúng là 10 → sai 3.', 'Dùng bình phương sai số: L = (10 − 7)² = 9.', 'Chỉnh w để dự đoán thành 9 → L = 1. Loss giảm nghĩa là mô hình tốt hơn.'],
+        explain: ['"Tìm w sao cho L nhỏ nhất" nghĩa là: tìm trọng số làm mô hình ít sai nhất.', 'Công thức cập nhật chỉ là cách chỉnh w từng bước để L giảm.'],
+        bridge: 'Mọi thứ trong w ← w − η·∂L/∂w phục vụ một mục tiêu: sau mỗi bước, L nhỏ đi.' },
+      sign: { name: 'Đạo hàm ∂L/∂w cho biết hướng',
+        base: ['∂L/∂w trả lời câu hỏi: "Nếu tăng w một chút, L tăng hay giảm, và nhanh cỡ nào?"', '∂L/∂w > 0 → tăng w làm L tăng → muốn L giảm thì phải giảm w.', '∂L/∂w < 0 → tăng w làm L giảm → nên tăng w.', 'Dấu trừ trong công thức = luôn đi ngược hướng làm L tăng.'],
+        example: ['L(w) = w², nên ∂L/∂w = 2w.', 'Tại w = 2: ∂L/∂w = 4 > 0 → tăng w thì L tăng (đang dốc lên).', 'w − η·4 làm w nhỏ đi → đi về phía đáy w = 0, L giảm.'],
+        explain: ['Gradient chỉ hướng "lên dốc" của loss.', 'Ta muốn xuống dốc nên đi theo hướng ngược lại: đó là dấu trừ.'],
+        bridge: 'Dấu trừ nghĩa là: bước ngược với hướng làm L tăng.', viz: 'slope' },
+      lr: { name: 'Learning rate η = độ dài mỗi bước',
+        base: ['Gradient cho biết hướng; η quyết định mỗi bước đi dài bao nhiêu.', 'Mức thay đổi của w = η × ∂L/∂w.', 'η quá lớn → nhảy qua đáy, loss dao động hoặc tăng vọt. η quá nhỏ → đi rất chậm.'],
+        example: ['η = 0.1, ∂L/∂w = 4 → w giảm 0.1 × 4 = 0.4.', 'η = 1 → w giảm 4: từ w = 2 nhảy sang w = −2, vượt qua đáy w = 0.', 'η = 0.001 → w chỉ giảm 0.004 mỗi bước, cần rất nhiều bước.'],
+        explain: ['η là "núm vặn" tốc độ học do người train chọn, mô hình không tự học ra η.', 'Khoảng 0.001 – 0.1 thường an toàn.'],
+        bridge: 'η nhân vào gradient để quyết định w đổi nhiều hay ít.' },
+      overview: { name: 'Giải thích lại theo cách khác',
+        base: ['Hình dung: bạn đứng trên sườn đồi trong sương mù và muốn xuống chỗ thấp nhất.', 'Bạn dò dưới chân xem phía nào dốc lên. Đó là gradient ∂L/∂w.', 'Bạn bước về phía ngược lại. Đó là dấu trừ.', 'Bước dài hay ngắn. Đó là η.', 'Lặp lại đến khi mặt đất bằng phẳng. Đó là loss hội tụ.'],
+        example: ['Bắt đầu w = 2, L = w², η = 0.1.', 'Bước 1: gradient = 4 → w = 2 − 0.4 = 1.6 (L: 4 → 2.56).', 'Bước 2: gradient = 3.2 → w = 1.6 − 0.32 = 1.28 (L: 2.56 → 1.64).'],
+        bridge: 'w ← w − η·∂L/∂w = "vị trí mới = vị trí cũ − độ dài bước × hướng dốc lên".' }
+    },
+    order: ['loss', 'sign', 'lr'],
+    diag: [
+      { topic: 'loss', label: 'hàm loss', q: 'Trong lúc training, ta muốn giá trị loss L…', opts: ['Càng nhỏ càng tốt', 'Càng lớn càng tốt', 'Bằng đúng 1'] },
+      { topic: 'sign', label: 'đạo hàm & hướng', q: 'Cho L(w) = w². Đang ở w = 2, nếu tăng w lên một chút thì L sẽ…', opts: ['Tăng', 'Giảm', 'Không đổi'] },
+      { topic: 'lr', label: 'learning rate', q: 'Cho η = 0.1 và ∂L/∂w = 4. Sau một bước, w thay đổi thế nào?', opts: ['Giảm 0.4', 'Giảm 4', 'Tăng 0.4'] }
+    ],
+    keywords: [[/trừ|gradient|đạo hàm|∂|dốc|hướng|grad/, 'sign'], [/η|eta|learning|rate|tốc độ|lr|tăng vọt|bước/, 'lr'], [/loss|l\(w\)|mất mát|sai số|hội tụ/, 'loss'], [/cả công thức|toàn bộ|cả slide|cả bước/, 'overview']],
+    theory: Object.assign({}, SLIDE, {
+      tabLabel: 'Slide 7', qqLabel: 'Câu hỏi nhanh · slide 7',
+      course: 'Ngày 9 · Training mạng nơ-ron', done: 6, total: 12, slideNo: 7,
+      slideRef: 'Slide 7 · Gradient Descent', slideName: 'Gradient Descent',
+      side: [['Slide: Hàm loss', '✓'], ['Slide: Gradient Descent', 'Đang học'], ['Slide: Backpropagation', ''], ['Slide: Learning rate schedule', '']],
+      situation: 'Bạn học cả ngày, đây là buổi chiều. Còn 5 slide nữa là hết bài. Bạn đã đọc slide này 2 lần nhưng vẫn không hiểu công thức.',
+      title: '<h2>Gradient Descent: cập nhật trọng số</h2>',
+      blocks: [
+        { topic: 'loss', label: 'Tìm w sao cho L(w) nhỏ nhất', html: '<p class="lead">Mục tiêu của training: tìm w sao cho hàm loss L(w) nhỏ nhất.</p>' },
+        { topic: 'sign', label: 'w ← w − η · ∂L/∂w', html: '<div class="formula">w ← w − η · ∂L/∂w</div>' },
+        { topic: 'sign', li: 1, label: '∂L/∂w: gradient của loss', html: '<b>∂L/∂w</b>: gradient của loss theo w' },
+        { topic: 'lr', li: 1, label: 'η (learning rate)', html: '<b>η</b> (learning rate): siêu tham số, thường 0.001 – 0.1' },
+        { topic: 'loss', li: 1, label: 'Lặp lại đến khi L hội tụ', html: 'Lặp lại đến khi L hội tụ' }
+      ],
+      check: { q: 'Cho L(w) = w², đang ở w = 3, η = 0.1. Sau một bước gradient descent, w mới bằng bao nhiêu?',
+        opts: ['2.4', '3.6', '2.9', 'Không chắc'], correct: 0, explain: '∂L/∂w = 2 × 3 = 6 → w = 3 − 0.1 × 6 = 2.4.' },
+      cSignals: [['clock', '4 phút ở slide này (thường ~1,5 phút)'], ['undo', 'Lật qua lại slide 6 ↔ 7 hai lần'], ['users', '6/10 học viên bí ở đây cần ôn phần đạo hàm']],
+      cDefault: 'sign', cAlts: [{ t: 'sign', p: '~60%' }, { t: 'lr', p: '~25%' }, { t: 'loss', p: '~10%' }, { t: 'overview', p: '' }],
+      d: { tried: 'Đã ở slide này khoảng 4 phút, lật lại 2 lần', placeholder: 'Ví dụ: không hiểu vì sao công thức lại có dấu trừ',
+        reply: { ta: ['Chào bạn! Thử nghĩ thế này: gradient ∂L/∂w cho biết đi về phía nào thì loss TĂNG. Mình muốn loss GIẢM nên đi ngược lại, đó là dấu trừ.', 'Bạn thử tính ∂L/∂w tại w = 3 rồi làm lại câu hỏi nhanh nhé.'],
+                 team: ['Dấu trừ là để đi xuống dốc á. Gradient dương thì giảm w, gradient âm thì tăng w.', 'Bạn vẽ cái parabol L = w² ra là thấy liền.'] },
+        more: { ta: 'Không sao! Với w = 3: ∂L/∂w = 2 × 3 = 6 > 0, nghĩa là tăng w thì loss tăng. Vậy phải giảm w một bước η × 6. Nếu vẫn kẹt, cuối giờ mình gọi bạn 5 phút nhé.',
+                team: 'Ở w = 3 dốc đang đi lên, muốn xuống đáy thì lùi w lại một đoạn η × gradient. Tối họp Lab mình giải thích thêm nha!' } }
+    }),
+    lab: Object.assign({}, LAB, {
+      tabLabel: 'Task 2', qqLabel: 'Checkpoint · Task 2',
+      course: 'Ngày 9 · DAY09 · Lab: Train MLP đầu tiên', done: 6, total: 15, slideNo: 4,
+      slideRef: 'Task 2 — Chọn learning rate · bước 4', slideName: 'Task 2',
+      module: 'Train MLP đầu tiên',
+      side: [['Thông tin brief & bối cảnh', '✓'], ['Chuẩn bị môi trường & fork repo', '✓'], ['Task 1 — Viết vòng train', '✓'], ['Task 2 — Chọn learning rate', 'Đang học'], ['Task 3 — Vẽ đường loss', ''], ['Trạm cứu hộ sự cố & FAQs', ''], ['Nộp bài và đánh giá Lab', '']],
+      situation: 'Bạn đang làm Lab buổi chiều. Với lr = 1.0, loss của bạn tăng vọt thay vì giảm. Bạn đã đọc hướng dẫn Task 2 hai lần.',
+      title: '<h2>📉 TASK 2 — CHỌN LEARNING RATE</h2>',
+      blocks: [
+        { topic: 'overview', label: 'Mục tiêu: loss giảm đều qua các epoch', html: '<div class="callout"><b>Mục tiêu:</b> loss giảm đều qua các epoch, không dao động hay tăng vọt.</div>' },
+        { topic: null, html: '<p style="margin:6px 0">Trong <code>train.py</code>, thử 3 giá trị <code>lr</code> và ghi lại loss sau 20 epoch:</p>' },
+        { topic: 'lr', n: 1, label: 'Chạy với lr = 1.0, 0.1 và 0.001', html: 'Chạy với <code>lr = 1.0</code>, <code>0.1</code> và <code>0.001</code>.' },
+        { topic: 'sign', n: 2, label: 'Cập nhật đúng dấu: w = w − lr * grad', html: 'Kiểm tra cập nhật trọng số đúng dấu: <code>w = w - lr * grad</code> (dấu trừ!).' },
+        { topic: 'loss', n: 3, label: 'Loss phải giảm dần theo epoch', html: 'So sánh đường loss: loss phải <b>giảm dần</b> theo epoch.' },
+        { topic: 'lr', label: 'Đoạn code vòng train + output loss tăng vọt', html: `<pre><code>for epoch in range(20):
+    loss = compute_loss(model, X, y)
+    grad = compute_grad(model, X, y)
+    model.w = model.w - lr * grad
+    print(epoch, round(loss, 3))
+# lr = 1.0 → 4.0, 9.0, 25.3, 81.7 ...  (tăng vọt?!)</code></pre>` }
+      ],
+      check: { q: 'Với lr = 1.0, loss in ra 4.0 → 9.0 → 25.3 → 81.7. Nên làm gì?',
+        opts: ['Giảm learning rate (vd 0.1) vì bước quá dài nên nhảy qua đáy', 'Tăng learning rate để hội tụ nhanh hơn', 'Đổi dấu thành w + lr * grad', 'Không chắc'], correct: 0,
+        explain: 'Loss tăng vọt là dấu hiệu bước quá dài: mỗi lần cập nhật nhảy qua đáy rồi càng xa hơn. Giảm lr để bước ngắn lại.' },
+      cSignals: [['clock', '18 phút ở bước này (thường ~8 phút)'], ['alert', 'Loss tăng qua 4 epoch liên tiếp'], ['users', '6/10 học viên bí ở đây đặt learning rate quá lớn']],
+      cDefault: 'lr', cAlts: [{ t: 'lr', p: '~60%' }, { t: 'sign', p: '~25%' }, { t: 'loss', p: '~15%' }, { t: 'overview', p: '' }],
+      d: { tried: 'Đã ở bước này khoảng 18 phút, chạy 3 lần đều thấy loss tăng', placeholder: 'Ví dụ: loss tăng vọt chứ không giảm',
+        reply: { ta: ['Chào bạn! Loss tăng vọt thường do learning rate quá lớn: mỗi bước nhảy qua đáy rồi xa dần.', 'Bạn thử lr = 0.1 rồi 0.01 xem đường loss nhé. Slide 7 bài Gradient Descent có giải thích η.'],
+                 team: ['Mình cũng bị với lr = 1.0 nè 😅 Hạ xuống 0.1 là loss giảm đều liền.'] },
+        more: { ta: 'Không sao! Hình dung đang xuống dốc mà bước quá dài thì nhảy sang sườn bên kia, càng lúc càng cao. Thu ngắn bước (giảm lr) là xuống được đáy.',
+                team: 'Tối họp Lab mình vẽ đồ thị loss cho bạn xem nha!' } }
+    })
+  }
+};
+const A_HELP = [
+  { v: 'explain', label: 'Giải thích dễ hơn', ask: 'Giải thích lại giúp mình dễ hiểu hơn.' },
+  { v: 'example', label: 'Cho ví dụ', ask: 'Cho mình một ví dụ cụ thể.' },
+  { v: 'base', label: 'Ôn kiến thức nền', ask: 'Mình cần ôn lại kiến thức nền nào để hiểu phần này?' }
+];
+// Option D — người nhận. "TA Hà", "Tuấn" là nhân vật giả lập (Wizard-of-Oz).
+const D_TO = {
+  ta: { label: 'Mentor / TA của lớp', name: 'TA Hà', role: 'Mentor lớp', av: ['H'], meta: 'Thường trả lời trong ~10 phút' },
+  team: { label: 'Nhóm Lab của bạn', name: 'Tuấn', role: 'Nhóm Lab của bạn', av: ['T', 'M', 'L'], meta: '2/4 bạn đang online' }
+};
+// LƯU Ý: cSignals, cAlts, câu trả lời ở D đều là canned / Wizard-of-Oz, KHÔNG phải dữ liệu thật.
+
+/* ===================== SESSION, PAGE STATE, TIMERS, LOG ===================== */
+const $app = document.getElementById('app');
+const LOG_KEY = 'vlearn-proto-log', TOPIC_KEY = 'vlearn-proto-topic', TAB_KEY = 'vlearn-proto-tab';
+let memLog = [], SS = null, S = null, F = null, nudgeTimer = null, timers = [];
+const store = { get(k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+function later(ms, fn) { const id = setTimeout(() => { timers = timers.filter(t => t !== id); if (SS) { fn(); render(); } }, ms); timers.push(id); }
+function clearTimers() { timers.forEach(clearTimeout); timers = []; clearTimeout(nudgeTimer); }
+function makeF(topic, tab) { const T = FX[topic]; return Object.assign({ topicKey: topic, tab, topics: T.topics, order: T.order, diag: T.diag, keywords: T.keywords, theory: T.theory }, T[tab]); }
+function freshPage(tab) {
+  return { tab, opt: SS.opt, panel: false, modal: false, pulsed: false, scrollTo: null,
+    a: { picking: false, sel: [], help: 'explain', q: '', edited: false, editing: false, err: '', stage: 'idle', topics: [], sent: '', anchor: -1, fallback: false },
+    b: { stage: 'quiz', i: 0, ans: {}, diag: null, pick: false, topic: null, override: false },
+    c: { open: false, stage: 'suggest', target: -1, topic: null, picked: false, trigger: null, off: false, nudged: false },
+    d: { stage: 'draft', to: 'ta', note: '', inc: { slide: true, time: true, qq: true }, lines: [], sentAt: '', status: 0, unread: false, more: null },
+    qq: { sel: null, last: null, tries: 0, solved: false } };
+}
+function startSession(topic, tab, opt) { SS = { topic, opt, start: tab, tab, t0: Date.now(), pages: {}, done: false, flash: null }; useTab(tab); }
+function useTab(tab) { SS.tab = tab; if (!SS.pages[tab]) SS.pages[tab] = freshPage(tab); S = SS.pages[tab]; F = makeF(SS.topic, tab); }
+function readLog() { try { return JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch (e) { return memLog; } }
+function log(evt, detail) {
+  const row = { at: new Date().toLocaleTimeString('vi-VN'), opt: SS ? `${SS.opt}·${SS.topic}/${SS.tab === 'lab' ? 'Lab' : 'LT'}` : '-', t: SS ? Math.round((Date.now() - SS.t0) / 1000) : 0, evt, detail: detail == null ? '' : String(detail) };
+  memLog.push(row);
+  try { const L = readLog(); L.push(row); localStorage.setItem(LOG_KEY, JSON.stringify(L)); } catch (e) {}
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ul = items => '<ul>' + items.map(i => `<li>${i}</li>`).join('') + '</ul>';
+const mmss = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+const firstBlock = (topic, page = F) => page.blocks.findIndex(b => b.topic === topic);
+const cap = s => s[0].toUpperCase() + s.slice(1);
+const typingDots = '<span class="typing" aria-label="Đang soạn"><i></i><i></i><i></i></span>';
+
+/* ===================== SHARED CONTENT COMPONENTS ===================== */
+function slopeSvg() {
+  const X = x => 20 + (x + 3) / 6 * 200, Y = y => 130 - y / 9 * 110;
+  let d = ''; for (let i = 0; i <= 60; i++) { const x = -3 + i * 0.1; d += (i ? 'L' : 'M') + X(x).toFixed(1) + ' ' + Y(x * x).toFixed(1) + ' '; }
+  const px = X(2), py = Y(4);
+  return `<svg class="viz" viewBox="0 0 360 150" role="img" aria-label="Đồ thị L bằng w bình phương: tại w bằng 2 dốc đi lên, nên bước ngược lại về phía w nhỏ hơn">
+    <defs><marker id="mu" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--bad)"/></marker>
+    <marker id="md" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--ok)"/></marker></defs>
+    <line class="axis" x1="20" y1="130" x2="222" y2="130"/><line class="axis" x1="${X(0)}" y1="12" x2="${X(0)}" y2="130"/>
+    <text x="224" y="134">w</text><text x="${X(0) + 4}" y="16">L</text><text x="${X(0) - 14}" y="144">0</text><text x="${px - 4}" y="144">2</text>
+    <path class="curve" d="${d}"/><line class="up" x1="${px}" y1="${py}" x2="${X(2.45)}" y2="${Y(5.8)}" marker-end="url(#mu)"/>
+    <path class="down" d="M${px - 4} ${py + 3} Q ${X(1.5)} ${Y(1.6)} ${X(1.05)} ${Y(1.2)}" marker-end="url(#md)"/><circle class="dot" cx="${px}" cy="${py}" r="5"/>
+    <text class="t-bad" x="236" y="46">↗ dốc lên tại w = 2</text><text x="236" y="61">∂L/∂w = 4 &gt; 0</text><text class="t-ok" x="236" y="90">↙ bước ngược lại</text><text x="236" y="105">giảm w → L giảm</text></svg>`;
+}
+function budgetSvg() {
+  const k = 300 / 8000, xi = 10 + 7500 * k;
+  return `<svg class="viz" viewBox="0 0 340 96" role="img" aria-label="Context window 8.000 token: input 7.500 token chiếm gần hết, output 1.000 token tràn ra ngoài 500 token">
+    <text x="10" y="14">Context window = 8.000 token</text><rect class="inp" x="10" y="24" width="${7500 * k}" height="26"/>
+    <rect class="out-ok" x="${xi}" y="24" width="${500 * k}" height="26"/><rect class="out-bad" x="310" y="24" width="${500 * k}" height="26"/>
+    <rect class="win" x="10" y="24" width="300" height="26" rx="3"/><text x="16" y="42" style="fill:var(--ink)">Input 7.500</text>
+    <text x="10" y="70">Output cần 1.000 token, chỉ còn chỗ cho 500</text><text class="t-bad" x="10" y="88">→ 500 token bị cắt mất</text></svg>`;
+}
+function loopSvg() {
+  return `<svg class="viz" viewBox="0 0 360 140" role="img" aria-label="Vòng ReAct: Thought, Action là code chạy tool, Observation là message role tool quay lại model; hết tool_calls thì trả lời">
+    <defs><marker id="ma" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:var(--muted)"/></marker></defs>
+    <rect class="box" x="8" y="20" width="96" height="40" rx="8"/><text class="b" x="56" y="38" text-anchor="middle">Thought</text><text x="56" y="52" text-anchor="middle">model nghĩ</text>
+    <rect class="box" x="132" y="20" width="96" height="40" rx="8"/><text class="b" x="180" y="38" text-anchor="middle">Action</text><text x="180" y="52" text-anchor="middle">code chạy tool</text>
+    <rect class="box hot" x="256" y="20" width="96" height="40" rx="8"/><text class="b" x="304" y="38" text-anchor="middle">Observation</text><text x="304" y="52" text-anchor="middle">role "tool"</text>
+    <line class="arr" x1="104" y1="40" x2="130" y2="40" marker-end="url(#ma)"/><line class="arr" x1="228" y1="40" x2="254" y2="40" marker-end="url(#ma)"/>
+    <path class="arr" d="M304 60 C 304 98, 56 98, 56 62" marker-end="url(#ma)"/><text class="t-bad" x="180" y="94" text-anchor="middle">append vào messages rồi gọi model lại</text>
+    <line class="arr" x1="20" y1="62" x2="20" y2="112" marker-end="url(#ma)"/><text x="28" y="126">hết tool_calls → trả lời, dừng</text></svg>`;
+}
+/* Trích dẫn: mọi nội dung AI tạo ra đều chỉ về đúng slide lý thuyết (và đoạn) liên quan */
+function cite(key) {
+  const th = F.theory, i = firstBlock(key, th);
+  const where = i >= 0 ? `"${th.blocks[i].label}"` : 'cả slide';
+  const pre = F.mode === 'lab' ? 'Xem lại lý thuyết' : 'Nguồn';
+  return `<button class="cite" data-act="cite" data-t="${key}">${I('book')} ${pre}: Slide ${th.slideNo} · ${where} ${I('right')}</button>`;
+}
+function topicBlock(key, parts) {
+  const t = F.topics[key];
+  let h = `<h3>${t.name}</h3>`;
+  if (parts.includes('explain')) h += ul(t.explain || t.base);
+  if (parts.includes('base')) h += ul(t.base) + ({ slope: slopeSvg, budget: budgetSvg, loop: loopSvg }[t.viz] || (() => ''))();
+  if (parts.includes('example')) h += `<div class="ex"><b>Ví dụ</b>${ul(t.example)}</div>`;
+  return `<div class="content">${h}<p class="bridge">${t.bridge}</p>${cite(key)}</div>`;
+}
+function meter(level) {
+  const n = { 'Cao': 3, 'Trung bình': 2, 'Thấp': 1 }[level], cls = { 'Cao': 'cao', 'Trung bình': 'tb', 'Thấp': 'thap' }[level];
+  return `<span class="meter ${cls}"><span class="bars">${[1, 2, 3].map(k => `<i class="${k <= n ? 'on' : ''}"></i>`).join('')}</span>Độ chắc chắn: ${level}</span>`;
+}
+
+/* ===================== VLEARN READER (common context ~70%) ===================== */
+function protoBar() {
+  return `<div class="pbar"><span class="tag">PROTOTYPE</span><span>Phương án <b>${SS.opt}</b></span><span>· Chủ đề: ${FX[SS.topic].label} · bắt đầu ở tab ${SS.start === 'lab' ? 'Lab' : 'Lý thuyết'}</span><span class="sp"></span>
+    <button data-act="reset">${I('reset')} Làm lại</button><a href="#/">Danh sách</a></div>`;
+}
+function header() {
+  const pct = Math.round(F.done / F.total * 100);
+  return `<header class="hdr"><a class="back" href="#/" aria-label="Về danh sách">${I('back')}</a>
+    <div class="title">${F.course}</div><span class="mode ${F.mode === 'lab' ? 'lab' : ''}">${F.modeLabel}</span>
+    <div class="prog">${F.done}/${F.total} ${F.progUnit} <span class="bar"><i style="width:${pct}%"></i></span></div>
+    ${themeBtn()}<div class="avatar">H</div></header>`;
+}
+function sidebar() {
+  const T = FX[SS.topic];
+  const slides = T.theory.side.map(([name, meta]) => `<div class="it ${SS.tab === 'theory' && meta === 'Đang học' ? 'cur' : ''}"><span class="ic">${I('slides')}</span><span>${name}</span><span class="meta">${meta === '✓' ? I('check') : SS.tab === 'theory' ? meta : ''}</span></div>`).join('');
+  const steps = T.lab.side.map(([name, meta], k) => `<div class="it ${SS.tab === 'lab' && meta === 'Đang học' ? 'cur' : meta === '✓' ? 'okd' : ''}"><span class="num">${meta === '✓' ? I('check') : k + 1}</span><span>${name}</span><span class="meta">${meta === '✓' || SS.tab !== 'lab' ? '' : meta}</span></div>`).join('');
+  return `<aside class="side"><h6>Nội dung bài học</h6>
+    <div class="grp">Slides ${I(SS.tab === 'theory' ? 'down' : 'right')}</div>${SS.tab === 'theory' ? slides : ''}
+    <div class="grp">Videos ${I('right')}</div>
+    <div class="lab-h">${I('flask')} Lab: ${T.lab.module}</div>${SS.tab === 'lab' ? steps : ''}
+    <div class="grp">Kiến thức & Quiz cuối Day ${I('right')}</div></aside>`;
+}
+function tabs() {
+  const T = FX[SS.topic];
+  return `<div class="tabs" role="tablist" aria-label="Chế độ học">${['theory', 'lab'].map(t => {
+    const p = SS.pages[t], badge = t !== SS.tab && p && ((p.d.unread) || (p.d.stage === 'sent')) ? '<span class="dot" title="Có cập nhật"></span>' : '';
+    return `<button role="tab" aria-selected="${t === SS.tab}" class="${t === SS.tab ? 'on' : ''}" data-act="tab" data-v="${t}">${I(t === 'lab' ? 'flask' : 'slides')} ${t === 'lab' ? 'Lab' : 'Lý thuyết'} <span>· ${T[t].tabLabel}</span>${badge}</button>`; }).join('')}</div>`;
+}
+function blockHtml(b, i) {
+  const aPick = S.opt === 'A' && S.a.picking, cPick = S.opt === 'C' && S.c.open && S.c.stage === 'pick';
+  const can = !!b.topic && (aPick || cPick);
+  const sel = S.opt === 'A' && S.a.sel.includes(i);
+  const target = S.opt === 'C' && S.c.open && S.c.stage === 'suggest' && S.c.target === i;
+  const flash = SS.flash === i && SS.tab === 'theory';
+  const blink = can && S.blink;
+  const cls = ['blk', b.li ? 'li' : '', b.n ? 'num' : '', can ? 'can' : '', blink ? 'blink' : '', sel ? 'sel' : '', target ? 'target' : '', flash ? 'flash' : ''].join(' ');
+  const attrs = can ? `role="button" tabindex="0" aria-pressed="${sel}" data-act="blk" data-i="${i}"` : '';
+  let h = `<div class="${cls}" ${b.n ? `data-n="${b.n}"` : ''} ${attrs} id="blk${i}">${b.html}${sel ? `<span class="tick">${I('check')}</span>` : ''}${target ? `<span class="pin">${I('target')} AI nghĩ bạn bí ở đây</span>` : ''}${flash ? `<span class="pin">${I('book')} Đoạn liên quan</span>` : ''}</div>`;
+  if (S.opt === 'A' && S.a.stage !== 'idle' && S.a.anchor === i) h += cardA();
+  if (S.opt === 'C' && S.c.open && S.c.target === i) h += cardC();
+  return h;
+}
+function stuckBar() {
+  if (S.opt === 'A' && S.a.picking) return pickBarA();
+  let extra = '';
+  if (S.opt === 'C' && S.c.off) extra = `<span class="pill">${I('power')} Tự nhắc đã tắt <button class="link" data-act="c-on">Bật lại</button></span>`;
+  if (S.opt === 'D' && S.d.stage === 'sent' && !S.panel) extra = `<button class="pill live" data-act="d-open">${typingDots} ${['Đã gửi', 'Đã xem', 'Đang trả lời'][S.d.status]} · ${D_TO[S.d.to].name}</button>`;
+  if (S.opt === 'D' && S.d.unread) extra = `<button class="pill new" data-act="d-open">${I('msg')} ${D_TO[S.d.to].name} đã trả lời · Xem</button>`;
+  return `<div class="helpbar"><button class="stuck ${S.pulsed ? '' : 'pulse'}" data-act="help">${I('help')} Tôi vẫn chưa hiểu</button>${extra}</div>`;
+}
+function checkCard() {
+  const C = F.check, Q = S.qq;
+  const opts = C.opts.map((o, k) => `<button data-act="qq" data-v="${k}" class="${Q.sel === k ? 'sel' : ''}" ${Q.sel !== null ? 'disabled' : ''}><span class="rd"></span>${o}</button>`).join('');
+  let res = '';
+  if (Q.sel !== null) res = Q.solved
+    ? `<div class="result ok">${I('check')}<div><b>Chính xác.</b> ${C.explain}</div></div><div class="row"><button class="primary" data-act="finish">Hoàn tất phương án ${S.opt} ${I('right')}</button></div>`
+    : `<div class="result bad">${I('alert')}<div><b>Chưa đúng (lần ${Q.tries}).</b></div></div><div class="row"><button class="stuck" data-act="help">${I('help')} Tôi vẫn chưa hiểu</button><button data-act="qq-retry">${I('reset')} Thử lại</button></div>`;
+  return `<section class="check" id="qq"><div class="eyebrow">${F.qqLabel}</div><h3>${C.q}</h3><div class="choices">${opts}</div>${res}</section>`;
+}
+function stage() {
+  if (SS.done) return `<main class="stage"><div class="card done"><div class="big">${I('check')}</div><h2 style="margin:0 0 6px">Bạn đã hoàn tất phương án ${SS.opt}</h2>
+    <p class="note">Cảm ơn bạn! Quay lại danh sách để thử phương án tiếp theo.</p>
+    <div class="row" style="justify-content:center"><a class="btn" href="#/">${I('back')} Về danh sách phương án</a><button data-act="reset">${I('reset')} Làm lại phương án ${SS.opt}</button></div></div></main>`;
+  const picking = (S.opt === 'A' && S.a.picking) || (S.opt === 'C' && S.c.open && S.c.stage === 'pick');
+  const meta = F.mode === 'lab' ? `<span>Bước <span class="n">${F.slideNo}</span> / ${F.side.length}</span>` : `<span>Slide <span class="n">${F.slideNo}</span> / ${F.total}</span>`;
+  const topCard = (S.opt === 'C' && S.c.open && S.c.target === -1 ? cardC() : '') + (S.opt === 'A' && S.a.stage !== 'idle' && S.a.anchor === -1 ? cardA() : '');
+  return `<main class="stage">${tabs()}
+    <div class="scenario"><span class="ic">${I('info')}</span><div><b>Tình huống:</b> ${F.situation}<br><b>Mục tiêu:</b> ${F.goal}</div></div>
+    <div class="meta-row"><span>${F.mode === 'lab' ? 'Hướng dẫn Lab' : 'Slide bài giảng'}</span>${meta}</div>
+    <article class="page ${F.mode === 'lab' ? 'lab' : ''} ${picking ? 'picking' : ''}" id="pageTop">${F.title}${topCard}${F.blocks.map(blockHtml).join('')}</article>
+    ${stuckBar()}
+    ${checkCard()}</main>`;
+}
+
+/* ===================== OPTION A — Inline Action: chạm vào đoạn chưa hiểu ===================== */
+function composeA() {
+  const labels = S.a.sel.map(i => `"${F.blocks[i].label}"`);
+  if (!labels.length) return '';
+  return `Trong ${F.unit} "${F.slideName}", mình chưa hiểu ${labels.join(', ')}. ${A_HELP.find(h => h.v === S.a.help).ask}`;
+}
+function pickBarA() {
+  const n = S.a.sel.length, q = S.a.q;
+  return `<div class="pickbar" role="region" aria-label="Hỏi Trợ giảng AI">
+    <div class="top"><span class="hint">${I('up')} ${n ? 'Chạm thêm đoạn khác, hoặc bấm Gửi' : 'Chạm vào đoạn bạn chưa hiểu ở phía trên'}</span><span class="count">Đã chọn ${n}</span><button class="x" data-act="a-cancel">Huỷ</button></div>
+    <div class="sub">AI chỉ trả lời đúng phần bạn chọn, dựa trên ${F.unit} này. AI không tự đoán bạn đang thiếu gì.</div>
+    <div class="seg" role="group" aria-label="Kiểu giúp">${A_HELP.map(h => `<button class="${S.a.help === h.v ? 'on' : ''}" aria-pressed="${S.a.help === h.v}" data-act="a-help" data-v="${h.v}">${h.label}</button>`).join('')}</div>
+    ${S.a.editing
+      ? `<textarea id="aq" aria-label="Câu hỏi gửi Trợ giảng AI" placeholder="Tự gõ câu hỏi của bạn…">${esc(q)}</textarea>`
+      : `<div class="q ${q ? '' : 'empty'}">${I('msg')}<p>${q ? esc(q) : 'Chưa chọn đoạn nào. Chạm vào các đoạn đang sáng vàng ở trên, câu hỏi sẽ tự soạn ở đây.'}</p></div>`}
+    ${S.a.err ? `<p class="err">${S.a.err}</p>` : ''}
+    <div class="acts"><button class="link" data-act="a-editq">${S.a.editing ? 'Xong' : 'Sửa / tự gõ câu hỏi'}</button>
+      <button class="link" data-act="a-all">Hỏi cả ${F.unit} này</button><span class="grow"></span>
+      <button class="primary" data-act="a-send" ${q.trim() ? '' : 'disabled'}>${I('send')} Gửi</button></div></div>`;
+}
+function cardA() {
+  const body = S.a.stage === 'typing' ? typingDots
+    : (S.a.fallback ? `<p class="note">AI chưa nhận ra phần cụ thể trong câu hỏi, nên giải thích lại cả ${F.unit}. Bạn có thể sửa câu hỏi để hỏi đúng chỗ hơn.</p>` : '')
+      + S.a.topics.map(k => topicBlock(k, [S.a.help])).join('');
+  return `<div class="icard" id="cardA"><div class="ih">${AIAV}<span class="nm">Trợ giảng AI</span><span class="badge">Trả lời câu bạn hỏi</span>
+      <button class="x" data-act="a-close" aria-label="Đóng">${I('x')}</button></div>
+    <div class="qecho">${I('msg')}<span>"${esc(S.a.sent)}"</span></div>${body}
+    ${S.a.stage === 'answer' ? `<div class="row"><button data-act="a-edit">${I('pencil')} Sửa câu hỏi</button><button class="primary" data-act="goqq">Đã rõ hơn → ${F.qqName} ${I('down')}</button></div>` : ''}</div>`;
+}
+
+/* ===================== OPTION C — Nudge: AI chỉ vào đoạn nó đoán bạn bí ===================== */
+function cardC() {
+  const head = `<div class="ih">${AIAV}<span class="nm">Trợ giảng AI</span>${S.c.trigger === 'auto' ? '<span class="badge red">Tự nhắc</span>' : '<span class="badge">Gợi ý</span>'}
+    <button class="x" data-act="c-hide" aria-label="Ẩn gợi ý">${I('x')}</button></div>`;
+  const dataNote = `<div class="datanote">${I('lock')}<span>AI dùng: thời gian ở ${F.unit} này, lượt quay lại ${F.unit} trước và kết quả ${F.qqName} trong phiên học này. Không lưu sau buổi học.
+    <button class="link" data-act="c-off">Tắt tự nhắc trong buổi này</button></span></div>`;
+  if (S.c.stage === 'pick') {
+    return `<div class="icard nudge" id="cardC">${head}<p style="margin:0 0 4px"><b>Chạm vào đoạn bạn đang bí</b> (các đoạn đang có viền), hoặc chọn nhanh:</p>
+      <div class="alts">${F.cAlts.filter(a => a.t !== S.c.topic).map(a => `<button data-act="c-pick" data-t="${a.t}"><span>${F.topics[a.t].name}</span><span class="p">${a.p ? 'khả năng ' + a.p : ''}</span></button>`).join('')}</div>
+      <div class="row"><button class="ghost" data-act="c-back">${I('back')} Quay lại gợi ý trước</button><button class="ghost" data-act="c-hide">Ẩn và học tiếp</button></div>${dataNote}</div>`;
+  }
+  const wrong = S.qq.tries && !S.qq.solved ? [['alert', `Vừa trả lời sai ${F.qqName} (lần ${S.qq.tries})`]] : [];
+  const sig = S.c.picked ? `<span class="sig">${I('tap')} Bạn đã tự chọn phần này</span>` : wrong.concat(F.cSignals).map(([ic, t]) => `<span class="sig">${I(ic)} ${t}</span>`).join('');
+  return `<div class="icard nudge" id="cardC">${head}
+    <p style="margin:0 0 6px;font-weight:600">${S.c.picked ? 'Phần ôn cho đoạn bạn chọn (~60 giây):' : S.c.trigger === 'auto' ? 'Có vẻ bạn đang bí ở đoạn được khoanh. AI đã mở sẵn phần ôn nhanh (~60 giây):' : 'AI đoán bạn đang bí ở đoạn được khoanh. Phần ôn nhanh (~60 giây):'}</p>
+    <div class="signals">${sig}</div>
+    ${S.c.picked ? '' : `<details class="why" data-why="c" ${S.c.why ? 'open' : ''}><summary>Vì sao AI nghĩ vậy?</summary><div style="margin:6px 0">${meter('Trung bình')}</div>
+      <ul><li>AI suy ra từ hành vi của bạn và của học viên khác, <b>chưa hỏi bạn câu nào</b>, nên có thể đoán sai.</li><li>Nếu sai, bấm "Không phải chỗ này" rồi chạm vào đoạn bạn thật sự bí.</li></ul></details>`}
+    ${topicBlock(S.c.topic, ['base', 'example'])}
+    <div class="row"><button class="primary" data-act="c-accept">${I('check')} Đúng chỗ, đã rõ hơn</button><button data-act="c-reject">Không phải chỗ này</button></div>${dataNote}</div>`;
+}
+
+/* ===================== SIDE PANEL — B (chat chẩn đoán) & D (luồng yêu cầu) ===================== */
+function panel() { return S.opt === 'B' ? panelB() : panelD(); }
+function panelB() {
+  const qs = F.diag;
+  const ansText = (q, a) => a === undefined ? 'Bỏ qua' : a === 'unsure' ? 'Không chắc' : q.opts[a];
+  let chat = `<div class="msg ai">${AIAV}<div class="bub">Mình hỏi nhanh <b>3 câu (~1 phút)</b> để tìm đúng phần kiến thức nền bạn đang thiếu nhé. Không chấm điểm, không lưu kết quả.</div></div>`;
+  qs.forEach((q, k) => {
+    if (k > S.b.i) return;
+    chat += `<div class="msg ai">${AIAV}<div class="bub"><div class="who">Câu ${k + 1}/3</div>${q.q}</div></div>`;
+    if (k < S.b.i) chat += `<div class="msg me"><div class="bub">${ansText(q, S.b.ans[q.topic])}</div></div>`;
+    else if (S.b.stage === 'quiz') chat += `<div class="opts-b">${q.opts.map((o, j) => `<button data-act="b-ans" data-v="${j}">${o}</button>`).join('')}
+      <div class="sub"><button data-act="b-ans" data-v="unsure">Không chắc</button><button data-act="b-ans" data-v="skip">Bỏ qua câu này</button></div></div>`;
+  });
+  if (S.b.stage === 'typing') chat += `<div class="msg ai">${AIAV}<div class="bub">${typingDots}</div></div>`;
+  if (S.b.stage === 'diag') {
+    const D = S.b.diag;
+    const mark = q => { const a = S.b.ans[q.topic];
+      return a === 0 ? ['ok', '✓', 'đúng'] : a === 'unsure' ? ['un', '?', 'không chắc'] : a === undefined ? ['sk', '–', 'bỏ qua'] : ['no', '✗', `chọn "${q.opts[a]}"`]; };
+    const evi = qs.map(q => { const [c, m, t] = mark(q); return `<li><span class="m ${c}">${m}</span>Câu ${qs.indexOf(q) + 1} về ${q.label}: ${t}${c === 'no' ? ` (đáp án đúng: "${q.opts[0]}")` : ''}</li>`; }).join('');
+    const mini = qs.map(q => { const [c, m] = mark(q); return `<span class="c"><span class="m ${c}">${m}</span>${q.label}</span>`; }).join('');
+    const pick = S.b.pick ? `<div class="pickl"><div class="eyebrow">Bạn muốn ôn phần nào?</div>${Object.keys(F.topics).filter(k => k !== S.b.topic).map(k => `<button data-act="b-topic" data-t="${k}">${F.topics[k].name}</button>`).join('')}</div>` : '';
+    chat += `<div class="dcard"><div class="eyebrow">Kết quả chẩn đoán</div>
+      <h3>${D.topic === 'overview' ? 'Có vẻ bạn không thiếu kiến thức nền' : 'Bạn đang cần ôn: ' + F.topics[D.topic].name}</h3>
+      ${meter(D.conf)}<p style="font-size:14px;margin:8px 0">${D.msg}</p>
+      <div class="eyebrow" style="margin-top:4px">AI dựa vào 3 câu trả lời của bạn</div><div class="evi-mini">${mini}</div>
+      <details class="why" data-why="b" ${S.b.why ? 'open' : ''}><summary>Xem chi tiết từng câu</summary><ul class="evi">${evi}</ul></details>
+      ${S.b.override ? '<div class="eyebrow" style="margin-top:10px">Phần bạn chọn</div>' : ''}${topicBlock(S.b.topic, ['base', 'example'])}
+      <div class="row"><button class="primary" data-act="goqq">Đã rõ hơn → ${F.qqName}</button><button data-act="b-pick">Không đúng chỗ</button></div>${pick}
+      <div class="row" style="margin-top:8px"><button class="ghost" data-act="b-restart">${I('reset')} Làm lại 3 câu</button></div></div>`;
+  }
+  const dots = S.b.stage === 'quiz' ? `<div class="dots">${qs.map((_, k) => `<i class="${k <= S.b.i ? 'on' : ''}"></i>`).join('')}</div>` : '';
+  return `<aside class="panel" aria-label="Trợ giảng AI"><div class="panel-h">${AIAV}<div style="min-width:0"><div class="t">Trợ giảng AI</div><div class="s">Đang mở: ${F.slideRef}</div></div>
+    <button class="x" data-act="close" aria-label="Đóng">${I('x')}</button></div>${dots}
+    <div class="panel-b" id="pb">${chat}</div><div class="panel-f">Trợ giảng AI có thể sai — hãy đối chiếu với bài giảng.</div></aside>`;
+}
+function huAv(letter, on) { return `<span class="hu-av ${on ? 'on' : ''}">${letter}</span>`; }
+function panelD() {
+  const to = D_TO[S.d.to];
+  const steps = ['Đã gửi', 'Đã xem', 'Đang trả lời', 'Đã trả lời'];
+  const st = S.d.stage === 'reply' ? 4 : S.d.status;
+  const track = `<div class="track">${steps.map((s, k) => `<div class="st ${k < st || k === 0 ? 'done' : k === st ? 'cur' : ''}"><div class="d">${k < st || k === 0 ? I('check') : ''}</div>${s}</div>`).join('')}</div>`;
+  let body = `<div class="msg me"><div class="bub req">${S.d.lines.map(l => `<div>${l}</div>`).join('')}${S.d.note ? `<div>${I('msg')}<span>${esc(S.d.note)}</span></div>` : ''}</div></div>
+    <div class="note" style="align-self:flex-end">Gửi cho ${to.label} · ${S.d.sentAt}</div>`;
+  if (S.d.stage === 'sent') {
+    body += S.d.status === 2 ? `<div class="msg hu">${huAv(to.av[0], true)}<div class="bub">${typingDots}</div></div>` : '';
+    body += `<div class="expect">${I('clock')}<span>${to.meta}. Bạn có thể đóng panel và học tiếp, VLearn sẽ báo khi có trả lời.</span></div>
+      <div class="row"><button data-act="close">Đóng, học tiếp</button><button class="ghost" data-act="d-cancel">Huỷ yêu cầu</button></div>`;
+  } else {
+    body += `<div class="msg hu">${huAv(to.av[0], true)}<div class="bub"><div class="who">${to.name} · ${to.role} · khoảng 10 phút sau</div>${F.d.reply[S.d.to].map(t => `<p style="margin:3px 0">${t}</p>`).join('')}</div></div>`;
+    if (S.d.more) body += `<div class="msg me"><div class="bub">Mình vẫn chưa hiểu lắm 😥</div></div>` +
+      (S.d.more === 'wait' ? `<div class="msg hu">${huAv(to.av[0], true)}<div class="bub">${typingDots}</div></div>` : `<div class="msg hu">${huAv(to.av[0], true)}<div class="bub"><div class="who">${to.name}</div>${F.d.more[S.d.to]}</div></div>`);
+    body += `<div class="row"><button class="primary" data-act="goqq">Mình hiểu rồi → ${F.qqName}</button>${S.d.more ? '' : '<button data-act="d-more">Vẫn chưa hiểu</button>'}</div>
+      <button class="ghost" style="align-self:flex-start" data-act="d-new">${I('pencil')} Gửi yêu cầu mới</button>`;
+  }
+  return `<aside class="panel" aria-label="Yêu cầu hỗ trợ"><div class="panel-h"><span class="ai-av" style="background:var(--ok-soft);color:var(--ok)">${I('users')}</span>
+    <div style="min-width:0"><div class="t">Yêu cầu hỗ trợ</div><div class="s">${to.label}</div></div><button class="x" data-act="close" aria-label="Đóng">${I('x')}</button></div>
+    ${track}<div class="panel-b" id="pb">${body}</div><div class="panel-f">${I('lock')} Người hỗ trợ chỉ thấy những thông tin bạn đã chọn chia sẻ.</div></aside>`;
+}
+function dContext() {
+  const qq = S.qq.tries ? `${cap(F.qqName)}: đã sai ${S.qq.tries} lần (lần gần nhất chọn "${F.check.opts[S.qq.last]}")` : `${cap(F.qqName)}: chưa làm`;
+  return [{ k: 'slide', ic: 'book', text: `Đang học: ${F.slideRef}` }, { k: 'time', ic: 'clock', text: F.d.tried }, { k: 'qq', ic: 'alert', text: qq }];
+}
+function modalD() {
+  const recips = Object.entries(D_TO).map(([k, r]) => `<button class="recip ${S.d.to === k ? 'on' : ''}" aria-pressed="${S.d.to === k}" data-act="d-to" data-v="${k}">
+    <span class="avs">${r.av.map((a, j) => huAv(a, j === 0)).join('')}</span><span class="n">${r.label}</span><span class="m">${I('clock')} ${r.meta}</span></button>`).join('');
+  const ctx = dContext().map(c => `<button class="ctx ${S.d.inc[c.k] ? 'on' : 'off'}" aria-pressed="${S.d.inc[c.k]}" data-act="d-inc" data-v="${c.k}"><span class="box">${S.d.inc[c.k] ? I('check') : ''}</span>${I(c.ic)}<span>${c.text}</span></button>`).join('');
+  return `<div class="overlay" data-act="d-dismiss"><div class="modal" role="dialog" aria-modal="true" aria-label="Nhờ người hỗ trợ" data-act="noop">
+    <div class="mh"><span class="ai-av" style="background:var(--ok-soft);color:var(--ok)">${I('users')}</span><h3>Nhờ người hỗ trợ</h3><button class="x" data-act="d-dismiss" aria-label="Đóng">${I('x')}</button></div>
+    <div class="expect">${I('spark')}<span>Trợ giảng AI đã soạn sẵn yêu cầu từ những gì bạn đang học. Bạn xem, sửa rồi mới gửi. <b>Người thật</b> sẽ trả lời; AI không tự giải thích.</span></div>
+    <h4>Gửi cho</h4><div class="recips">${recips}</div>
+    <h4>AI đã điền sẵn · chạm để bỏ dòng bạn không muốn chia sẻ</h4><div class="ctxs">${ctx}</div>
+    <h4>Bạn bí ở đâu? (không bắt buộc)</h4><textarea id="dn" placeholder="${F.d.placeholder}">${esc(S.d.note)}</textarea>
+    <div class="mf"><button class="ghost" data-act="d-dismiss">Huỷ</button><button class="primary" data-act="d-send">${I('send')} Gửi yêu cầu</button></div></div></div>`;
+}
+
+/* ===================== THEME (mặc định sáng, nhớ lựa chọn) ===================== */
+const THEME_KEY = 'vlearn-proto-theme';
+function applyTheme(t) { document.documentElement.dataset.theme = t; }
+function themeBtn() {
+  const dark = document.documentElement.dataset.theme === 'dark';
+  return `<button class="theme" data-act="theme" aria-label="${dark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}" title="${dark ? 'Giao diện sáng' : 'Giao diện tối'}">${I(dark ? 'sun' : 'moon')}</button>`;
+}
+applyTheme(store.get(THEME_KEY, 'light'));
+
+/* ===================== HOME & LOG ===================== */
+function viewHome() {
+  const topic = store.get(TOPIC_KEY, 'context'), tab = store.get(TAB_KEY, 'theory');
+  const tcards = Object.entries(FX).map(([k, t]) => `<button class="${topic === k ? 'on' : ''}" aria-pressed="${topic === k}" data-act="h-topic" data-v="${k}"><span class="t">${t.label}</span><span class="d">${t.sub}</span></button>`).join('');
+  const modes = [['theory', 'Lý thuyết', 'slides'], ['lab', 'Lab', 'flask']].map(([k, l, ic]) => `<button class="${tab === k ? 'on' : ''}" aria-pressed="${tab === k}" data-act="h-tab" data-v="${k}">${I(ic)} ${l} <span class="note" style="color:inherit;opacity:.8">· ${FX[topic][k].tabLabel}</span></button>`).join('');
+  return `<main class="home"><div class="home-top"><div class="logo"><span class="v">V</span>V<b>L</b>earn</div>${themeBtn()}</div>
+    <h1>AI Tutor · Prototype</h1><p class="lede">Bạn sẽ dùng lần lượt bốn phương án cho <b>cùng một tình huống học tập</b>. Không có đúng hay sai. Hãy tự thao tác và nói to điều bạn đang nghĩ.</p>
+    <div class="step"><div class="lbl"><i>1</i>Chủ đề <span class="note" style="font-weight:400">· facilitator chọn trước, giữ nguyên cho cả 4 phương án</span></div><div class="topic-cards">${tcards}</div></div>
+    <div class="step"><div class="lbl"><i>2</i>Bắt đầu ở tab <span class="note" style="font-weight:400">· tester vẫn tự chuyển giữa Lý thuyết và Lab được</span></div><div class="modes">${modes}</div></div>
+    <div class="step"><div class="lbl"><i>3</i>Chọn phương án</div><div class="opts">${['A', 'B', 'C', 'D'].map(o => `<a href="#/${topic}/${tab}/${o}"><span class="L">${o}</span><b>Phương án ${o}</b><span class="go">Bắt đầu ${I('right')}</span></a>`).join('')}</div></div>
+    <footer style="margin-top:32px"><a class="note" href="#/log">Facilitator log</a></footer></main>`;
+}
+function viewLog() {
+  const rows = readLog().map(r => `<tr><td>${esc(r.at)}</td><td>${esc(r.opt)}</td><td>${mmss(r.t)}</td><td>${esc(r.evt)}</td><td>${esc(r.detail)}</td></tr>`).join('');
+  return `<main class="home"><h1>Facilitator log</h1>
+    <p class="note">Chỉ facilitator xem. Mốc t tính từ lúc mở phương án. Cột PA: phương án · chủ đề / tab (LT = Lý thuyết). Dùng để đối chiếu với ghi chép quan sát, không thay thế ghi chép.</p>
+    <div class="row"><a class="btn" href="#/">${I('back')} Về danh sách</a><button data-act="log-copy">Copy dạng CSV</button><button data-act="log-clear">Xoá log (trước tester mới)</button></div>
+    <div class="card" style="overflow:auto"><table><thead><tr><th>Giờ</th><th>PA</th><th>t</th><th>Sự kiện</th><th>Chi tiết</th></tr></thead><tbody>${rows || '<tr><td colspan="5">Chưa có sự kiện.</td></tr>'}</tbody></table></div></main>`;
+}
+
+/* ===================== LOGIC ===================== */
+function detectTopics(text) {
+  const t = text.replace(`${F.unit} "${F.slideName}"`, '').toLowerCase(), out = new Set();
+  F.keywords.forEach(([re, k]) => { if (re.test(t)) out.add(k); });
+  return out;
+}
+function diagnose(st) {
+  const A = st.b.ans;
+  const gaps = F.order.filter(k => A[k] !== undefined && A[k] !== 0);
+  const blank = F.order.filter(k => A[k] === undefined).length;
+  if (!gaps.length) return { topic: 'overview', conf: blank ? 'Thấp' : 'Trung bình', msg: `Bạn trả lời đúng các câu về kiến thức nền. Có thể chỗ khó nằm ở cách ${F.unit} này trình bày, nên AI giải thích lại theo cách khác.` };
+  if (gaps.length === 1) return { topic: gaps[0], conf: A[gaps[0]] === 'unsure' || blank ? 'Trung bình' : 'Cao', msg: 'Đây là phần duy nhất bạn chưa chắc trong 3 câu.' };
+  return { topic: gaps[0], conf: 'Thấp', msg: `Bạn chưa chắc ${gaps.length} phần. AI gợi ý bắt đầu từ phần nền nhất; bạn có thể chọn phần khác.` };
+}
+function openC(trigger) {
+  S.c.open = true; S.c.stage = 'suggest'; S.c.trigger = trigger; S.c.nudged = true; S.c.picked = false;
+  S.c.topic = F.cDefault; S.c.target = firstBlock(F.cDefault); S.scrollTo = 'cardC';
+}
+const ACT = {
+  noop() {},
+  theme() { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; applyTheme(t); store.set(THEME_KEY, t); },
+  'h-topic'(d) { store.set(TOPIC_KEY, d.v); },
+  'h-tab'(d) { store.set(TAB_KEY, d.v); },
+  tab(d) { if (d.v === SS.tab) return; log('switch-tab', `${SS.tab} → ${d.v}`); useTab(d.v); window.scrollTo(0, 0); },
+  cite(d) {
+    const from = SS.tab, i = firstBlock(d.t, F.theory);
+    log('cite-open', `${d.t} (từ tab ${from === 'lab' ? 'Lab' : 'Lý thuyết'})`);
+    if (from !== 'theory') useTab('theory');
+    SS.flash = i; S.scrollTo = i >= 0 ? 'blk' + i : 'pageTop';
+  },
+  reset() { clearTimers(); log('reset'); startSession(SS.topic, SS.start, SS.opt); log('start'); },
+  help() {
+    log('open-help', S.qq.sel !== null ? 'sau ' + F.qqName : 'từ nội dung');
+    S.pulsed = true;
+    if (S.opt === 'A') { S.a.picking = true; S.a.stage = 'idle'; S.a.err = ''; S.blink = true; S.scrollTo = 'pageTop'; const st = S; setTimeout(() => { st.blink = false; }, 3000); }
+    if (S.opt === 'B') { S.panel = true; }
+    if (S.opt === 'C') { openC('manual'); }
+    if (S.opt === 'D') { if (S.d.stage === 'draft') S.modal = true; else { S.panel = true; S.d.unread = false; } }
+  },
+  close() { S.panel = false; log('close-panel'); },
+  goqq() {
+    S.panel = false; S.scrollTo = 'qq';
+    if (S.opt === 'A') { S.a.stage = 'idle'; S.a.sel = []; S.a.q = ''; S.a.edited = false; }
+    if (S.opt === 'C') { S.c.open = false; }
+    log('understood', S.opt === 'A' ? S.a.topics.join(',') : S.opt === 'B' ? S.b.topic : S.opt === 'D' ? (S.d.more ? 'sau khi hỏi tiếp' : 'sau trả lời đầu') : '');
+  },
+  qq(d) {
+    const k = Number(d.v); S.qq.sel = k; S.qq.last = k; S.qq.tries++; S.qq.solved = k === F.check.correct; S.pulsed = true;
+    log('quick-question', `${S.qq.solved ? 'đúng' : 'sai'} (lần ${S.qq.tries}, chọn "${F.check.opts[k]}")`);
+    if (S.opt === 'C' && !S.qq.solved && !S.c.off && !(S.c.open && S.c.stage === 'pick')) { openC('auto'); log('c-nudge', 'sau khi sai ' + F.qqName); }
+  },
+  'qq-retry'() { S.qq.sel = null; },
+  finish() { clearTimers(); log('done', `${F.qqName}: ${S.qq.tries} lần`); SS.done = true; S.panel = false; S.modal = false; window.scrollTo(0, 0); },
+  blk(d) {
+    const i = Number(d.i), b = F.blocks[i];
+    if (S.opt === 'A' && S.a.picking) {
+      const k = S.a.sel.indexOf(i); k < 0 ? S.a.sel.push(i) : S.a.sel.splice(k, 1); S.a.sel.sort((x, y) => x - y);
+      S.a.err = ''; S.blink = false; if (!S.a.edited) S.a.q = composeA(); log('a-select', `${k < 0 ? '+' : '-'}${b.topic}`);
+    } else if (S.opt === 'C' && S.c.open && S.c.stage === 'pick') {
+      S.c.target = i; S.c.topic = b.topic; S.c.picked = true; S.c.stage = 'suggest'; S.scrollTo = 'cardC'; log('c-pick-block', b.topic);
+    }
+  },
+  // A
+  'a-help'(d) { S.a.help = d.v; if (!S.a.edited) S.a.q = composeA(); },
+  'a-editq'() { S.a.editing = !S.a.editing; },
+  'a-cancel'() { S.a.picking = false; S.a.sel = []; S.a.q = ''; S.a.edited = false; S.a.editing = false; log('a-cancel'); },
+  'a-all'() { S.a.sel = []; S.a.q = `Mình chưa hiểu cả ${F.unit} "${F.slideName}". ${A_HELP.find(h => h.v === S.a.help).ask}`; S.a.edited = false; ACT['a-send']({ all: true }); },
+  'a-send'(d) {
+    const st = S, q = st.a.q.trim();
+    if (!q) { st.a.err = 'Hãy chạm vào ít nhất một đoạn, hoặc tự gõ câu hỏi.'; return; }
+    const topics = new Set(d && d.all === true ? ['overview'] : st.a.sel.map(i => F.blocks[i].topic));
+    if (st.a.edited) detectTopics(q).forEach(t => topics.add(t));
+    st.a.fallback = topics.size === 0; if (st.a.fallback) topics.add('overview');
+    if (topics.has('overview') && topics.size > 1) topics.delete('overview');
+    st.a.topics = Object.keys(F.topics).filter(k => topics.has(k));
+    st.a.sent = q; st.a.anchor = st.a.sel.length ? st.a.sel[st.a.sel.length - 1] : -1;
+    st.a.picking = false; st.a.editing = false; st.a.stage = 'typing'; st.scrollTo = 'cardA';
+    log('a-send', `chọn=[${st.a.sel.map(i => F.blocks[i].topic).join(',')}] kiểu=${st.a.help} sửa_tay=${st.a.edited} → ${st.a.topics.join(',')}`);
+    later(900, () => { st.a.stage = 'answer'; });
+  },
+  'a-edit'() { S.a.picking = true; S.a.stage = 'idle'; S.blink = true; const st = S; setTimeout(() => { st.blink = false; }, 3000); log('a-edit'); },
+  'a-close'() { S.a.stage = 'idle'; S.a.sel = []; S.a.q = ''; S.a.edited = false; log('a-close'); },
+  // B
+  'b-ans'(d) {
+    const st = S, q = F.diag[st.b.i];
+    if (d.v === 'skip') delete st.b.ans[q.topic]; else st.b.ans[q.topic] = /^\d+$/.test(d.v) ? Number(d.v) : d.v;
+    log('b-answer', `${q.topic}=${d.v === '0' ? 'đúng' : d.v}`);
+    st.b.i++; st.scrollTo = 'pb-end';
+    if (st.b.i >= F.diag.length) {
+      st.b.stage = 'typing';
+      later(900, () => { st.b.diag = diagnose(st); st.b.topic = st.b.diag.topic; st.b.override = false; st.b.stage = 'diag'; st.scrollTo = 'pb-end'; log('b-diag', `${st.b.diag.topic} (${st.b.diag.conf})`); });
+    }
+  },
+  'b-pick'() { S.b.pick = !S.b.pick; if (S.b.pick) log('b-reject-diag', S.b.topic); },
+  'b-topic'(d) { S.b.topic = d.t; S.b.override = true; S.b.pick = false; log('b-override', d.t); },
+  'b-restart'() { S.b = { stage: 'quiz', i: 0, ans: {}, diag: null, pick: false, topic: null, override: false }; log('b-restart'); },
+  // C
+  'c-hide'() { S.c.open = false; log('c-hide'); },
+  'c-accept'() { S.c.open = false; S.scrollTo = 'qq'; log('c-accept', S.c.topic); },
+  'c-reject'() { S.c.stage = 'pick'; log('c-reject', S.c.topic); },
+  'c-back'() { S.c.stage = 'suggest'; },
+  'c-pick'(d) { S.c.topic = d.t; S.c.target = firstBlock(d.t); S.c.picked = true; S.c.stage = 'suggest'; S.scrollTo = 'cardC'; log('c-pick', d.t); },
+  'c-off'() { S.c.off = true; S.c.open = false; log('c-off'); },
+  'c-on'() { S.c.off = false; S.c.nudged = false; log('c-on'); },
+  // D
+  'd-dismiss'() { S.modal = false; log('d-cancel-draft'); },
+  'd-to'(d) { S.d.to = d.v; },
+  'd-inc'(d) { S.d.inc[d.v] = !S.d.inc[d.v]; log('d-toggle-context', `${d.v}=${S.d.inc[d.v] ? 'chia sẻ' : 'ẩn'}`); },
+  'd-send'() {
+    const st = S, tab = SS.tab;
+    st.d.lines = dContext().filter(c => st.d.inc[c.k]).map(c => `${I(c.ic)}<span>${esc(c.text)}</span>`);
+    st.d.sentAt = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    st.d.stage = 'sent'; st.d.status = 0; st.d.more = null; st.modal = false; st.panel = true;
+    log('d-send', `tới=${st.d.to} chia_sẻ=[${Object.keys(st.d.inc).filter(k => st.d.inc[k]).join(',')}] ghi_chú=${st.d.note ? 'có' : 'không'}`);
+    const visible = () => st.panel && SS.tab === tab;
+    later(4000, () => { if (st.d.stage === 'sent') st.d.status = 1; });
+    later(9000, () => { if (st.d.stage === 'sent') st.d.status = 2; });
+    later(15000, () => { if (st.d.stage === 'sent') { st.d.stage = 'reply'; if (!visible()) st.d.unread = true; st.scrollTo = 'pb-end'; log('d-reply-arrived', visible() ? 'panel mở' : 'panel đóng / khác tab'); } });
+  },
+  'd-cancel'() { clearTimers(); S.d.stage = 'draft'; S.panel = false; log('d-cancel'); },
+  'd-open'() { S.panel = true; S.d.unread = false; log('d-open'); },
+  'd-more'() { const st = S, tab = SS.tab; st.d.more = 'wait'; log('d-more'); st.scrollTo = 'pb-end'; later(6000, () => { st.d.more = 'done'; if (!(st.panel && SS.tab === tab)) st.d.unread = true; st.scrollTo = 'pb-end'; }); },
+  'd-new'() { clearTimers(); S.d.stage = 'draft'; S.d.more = null; S.panel = false; S.modal = true; log('d-new'); },
+  // log
+  'log-clear'() { if (confirm('Xoá toàn bộ log?')) { memLog = []; try { localStorage.removeItem(LOG_KEY); } catch (e) {} } },
+  'log-copy'() {
+    const csv = ['time,option,t_sec,event,detail'].concat(readLog().map(r => [r.at, r.opt, r.t, r.evt, '"' + r.detail.replace(/"/g, '""') + '"'].join(','))).join('\n');
+    navigator.clipboard && navigator.clipboard.writeText(csv).then(() => alert('Đã copy CSV.'), () => prompt('Copy thủ công:', csv));
+  }
+};
+
+/* ===================== RENDER & ROUTING ===================== */
+function render() {
+  clearTimeout(nudgeTimer);
+  if (!SS) { $app.innerHTML = location.hash.includes('log') ? viewLog() : viewHome(); return; }
+  const withPanel = S.panel && !SS.done && (S.opt === 'B' || (S.opt === 'D' && S.d.stage !== 'draft'));
+  $app.innerHTML = protoBar() + header() + `<div class="shell ${withPanel ? 'with-panel' : ''}">${sidebar()}${stage()}${withPanel ? panel() : ''}</div>` + (S.modal && !SS.done ? modalD() : '');
+  if (!S.pulsed) { const st = S; setTimeout(() => { st.pulsed = true; }, 5500); }
+  if (S.scrollTo) {
+    const id = S.scrollTo; S.scrollTo = null;
+    requestAnimationFrame(() => {
+      if (id === 'pb-end') { const pb = document.getElementById('pb'); if (pb) pb.scrollTo({ top: pb.scrollHeight, behavior: 'smooth' }); return; }
+      const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: id === 'pageTop' ? 'start' : 'center' });
+    });
+  }
+  if (S.opt === 'C' && !S.c.open && !SS.done && !S.c.off && !S.c.nudged) {
+    const st = S;
+    nudgeTimer = setTimeout(() => { if (SS && S === st && !st.c.open && !SS.done) { openC('auto'); log('c-nudge', 'tự động sau 12s'); render(); } }, 12000);
+  }
+  if (S.opt === 'A' && S.a.editing) { const t = document.getElementById('aq'); if (t && document.activeElement !== t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }
+}
+function route() {
+  clearTimers();
+  const [topic, tab, opt] = location.hash.replace(/^#\/?/, '').split('/');
+  if (FX[topic] && (tab === 'theory' || tab === 'lab') && ['A', 'B', 'C', 'D'].includes(opt)) { startSession(topic, tab, opt); log('start'); window.scrollTo(0, 0); }
+  else { SS = null; S = null; F = null; }
+  render();
+}
+document.addEventListener('click', e => {
+  if (e.target.closest('textarea, input')) return;
+  const el = e.target.closest('[data-act]');
+  if (!el || !ACT[el.dataset.act]) return;
+  e.preventDefault();
+  if (SS && el.dataset.act !== 'cite') SS.flash = null;
+  ACT[el.dataset.act](el.dataset, el);
+  render();
+});
+document.addEventListener('keydown', e => {
+  const el = e.target.closest && e.target.closest('[role="button"][data-act]');
+  if (el && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); el.click(); }
+  if (e.key === 'Escape' && SS) {
+    if (S.modal) { ACT['d-dismiss'](); render(); }
+    else if (S.opt === 'A' && S.a.picking) { ACT['a-cancel'](); render(); }
+  }
+});
+document.addEventListener('input', e => {
+  if (e.target.id === 'dn') { S.d.note = e.target.value; return; }
+  if (e.target.id === 'aq') { S.a.q = e.target.value; S.a.edited = true; const b = document.querySelector('[data-act="a-send"]'); if (b) b.disabled = !S.a.q.trim(); }
+});
+document.addEventListener('toggle', e => {
+  const d = e.target;
+  if (!SS || !d.matches || !d.matches('details[data-why]')) return;
+  const k = d.dataset.why;
+  if (S[k].why === d.open) return;
+  S[k].why = d.open;
+  log(d.open ? 'open-why' : 'close-why', k === 'b' ? 'chi tiết chẩn đoán' : 'vì sao AI nghĩ vậy');
+}, true);
+window.addEventListener('hashchange', route);
+route();
+</script>
+</body>
+</html>
